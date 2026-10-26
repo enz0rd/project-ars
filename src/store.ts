@@ -30,6 +30,8 @@ interface EditorState {
   duplicateSelection: () => void;
   moveInZ: (id: string, index: number) => void;
   applyOps: (ops: DocOp[]) => void;
+  /** Replace nodes (and optionally the selection) without touching history. */
+  setNodes: (nodes: DesignNode[], selection?: string[]) => void;
   replaceNodes: (nodes: DesignNode[]) => void;
   undo: () => void;
   redo: () => void;
@@ -121,6 +123,8 @@ export const useEditor = create<EditorState>((set, get) => ({
   },
 
   applyOps: (ops) => set((s) => ({ nodes: ops.reduce(applyOp, s.nodes) })),
+
+  setNodes: (nodes, selection) => set(selection ? { nodes, selection } : { nodes }),
 
   replaceNodes: (nodes) => {
     get().checkpoint();

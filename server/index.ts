@@ -37,7 +37,8 @@ app.use("/api/live", liveRouter);
 app.all("/mcp", (req, res) => void mcpNodeHandler(req, res, req.body));
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true });
+  const mcpHost = host === "0.0.0.0" || host === "::" ? "127.0.0.1" : host;
+  res.json({ ok: true, mcpUrl: `http://${mcpHost}:${port}/mcp` });
 });
 
 // Settings — secrets are write-only: responses only say whether a key/token is set.

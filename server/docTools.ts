@@ -15,7 +15,8 @@ export const CANVAS_GUIDE = `Canvas model:
 - Coordinates are in pixels, origin at the top-left, y grows downward.
 - Nodes are flat (no nesting). Array order is z-order: later nodes render on top.
   A "frame" is a background container (e.g. a screen or card); put its contents after it so they render above.
-- Colors are hex strings like "#1E1E1E". Use "transparent" for no fill.
+- Colors are hex strings like "#1E1E1E" (or "#RRGGBBAA" with alpha). Use "transparent" for no fill.
+- Any node can have a drop shadow; subtle ones (e.g. y 4, blur 16, "#0000001A") look modern.
 - Text nodes use "fill" as the text color; width/height define the text box.
 
 Guidelines:
@@ -39,6 +40,11 @@ const nodeFields = {
   cornerRadius: z.number().optional(),
   opacity: z.number().min(0).max(1).optional(),
   visible: z.boolean().optional(),
+  shadow: z
+    .object({ x: z.number(), y: z.number(), blur: z.number().min(0), color: z.string().describe('Hex, alpha allowed: "#00000033"') })
+    .nullable()
+    .optional()
+    .describe("Drop shadow; null removes it"),
   text: z.string().optional().describe("Text content (text nodes only)"),
   fontSize: z.number().optional(),
   fontWeight: z.number().optional().describe("100-900"),

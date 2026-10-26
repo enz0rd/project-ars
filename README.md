@@ -5,16 +5,20 @@ cria e edita as camadas do canvas ao vivo.
 
 ## Recursos
 
-- **Editor vetorial** em SVG: frames, retângulos, elipses e texto
-- Selecionar, mover, redimensionar (Shift mantém proporção), seleção por área, duplicar, excluir
-- Pan (espaço / botão do meio / ferramenta mão) e zoom em direção ao cursor (Ctrl + scroll)
-- Painel de camadas (renomear, reordenar arrastando, ocultar, bloquear) e painel de propriedades
-- Desfazer/refazer, salvamento automático no navegador, exportar/importar JSON
+- **Editor vetorial** em SVG: frames, retângulos, elipses e texto, com sombra, borda, cantos e opacidade
+- **Guias inteligentes**: encaixe nas bordas e centros das outras camadas ao mover e redimensionar
+  (segure Ctrl para desligar)
+- Alinhar e distribuir, copiar/colar, duplicar (Ctrl+D ou Alt+arrastar), ordem de camadas, ocultar/bloquear
+- Menu de clique direito, painel de atalhos (`?`), campos numéricos com arrastar no rótulo e contas (`375/2`)
+- Zoom em direção ao cursor, ajustar à tela (Shift+1) e à seleção (Shift+2), grade de pontos
+- Painel de camadas com busca, renomear e reordenar arrastando
+- Tema claro/escuro, desfazer/refazer, salvamento automático no navegador
+- Exportar **PNG** (1x/2x), **SVG** ou JSON — da seleção ou do documento inteiro
 - **Painel do Claude**: o Claude usa ferramentas (`create_nodes`, `update_nodes`, `delete_nodes`,
   `reorder_node`, `get_document`) para editar o documento; cada operação é transmitida por SSE e
   aplicada no canvas enquanto ele trabalha. Toda a resposta vira **um único passo de desfazer**.
-- **Tela de configurações (⚙)**: chave da API do Claude (com teste de validade) e servidores MCP
-  remotos que dão ferramentas extras ao Claude enquanto ele desenha.
+- **Tela de configurações (⚙)**: chave da API do Claude (com teste de validade), servidores MCP
+  remotos que dão ferramentas extras ao Claude, e instruções para conectar o Claude Code.
 
 ## Começando
 
@@ -51,11 +55,12 @@ claude mcp add --transport http figma-claude http://127.0.0.1:8787/mcp
 
 Ferramentas: `get_document`, `create_nodes`, `update_nodes`, `delete_nodes`, `reorder_node`, `select_nodes`.
 Cada chamada vira um passo de desfazer no editor. Sem nenhum editor aberto, as ferramentas respondem com
-erro pedindo para abrir o app.
+erro pedindo para abrir o app. Com várias abas abertas, o MCP age **só na aba usada mais recentemente**
+(o indicador no topo mostra "MCP nesta aba").
 
-Como funciona: o navegador envia um snapshot do documento a cada mudança (`PUT /api/live/document`) e
-escuta `GET /api/live` (SSE). As ferramentas MCP editam o snapshot e transmitem as operações para todos os
-editores abertos. Snapshots atrasados (anteriores à última operação MCP) são ignorados.
+Como funciona: cada aba abre `GET /api/live` (SSE), recebe um id de sessão e envia um snapshot do documento
+a cada mudança (`PUT /api/live/document`). As ferramentas MCP editam o snapshot da aba ativa e transmitem as
+operações só para ela. Snapshots atrasados (anteriores à última operação MCP) são ignorados.
 
 ## Arquitetura
 
@@ -68,9 +73,13 @@ server/live.ts         ponte ao vivo navegador ↔ servidor (snapshot + SSE)
 server/mcp.ts          servidor MCP em /mcp
 server/settings.ts     chave da API e servidores MCP persistidos em data/settings.json
 src/store.ts           estado do editor (zustand), histórico de undo, persistência
+src/actions.ts         comandos do editor (alinhar, colar, zoom, exportar…) usados por atalhos e menus
+src/geometry.ts        caixas, guias inteligentes e snapping
+src/export.ts          exportação SVG/PNG
+src/ui.ts              estado da interface (tema, abas, menus, toasts)
 src/settings.ts        estado da tela de configurações
 src/live.ts            sincroniza o editor com a ponte ao vivo
-src/components/        Canvas, Toolbar, LayersPanel, PropertiesPanel, AiPanel, SettingsModal
+src/components/        Canvas, TopBar, ToolDock, LayersPanel, RightPanel, PropertiesPanel, AiPanel, …
 ```
 
 A chave da API fica só no servidor. O cliente envia o documento atual, a seleção e o histórico do
@@ -92,22 +101,21 @@ fallback recomendado.
 
 ## Atalhos
 
+Aperte `?` no app para ver a lista completa. Os principais:
+
 | Tecla | Ação |
 |---|---|
 | V / H / F / R / O / T | Mover / Mão / Frame / Retângulo / Elipse / Texto |
-| Espaço + arrastar | Pan |
-| Ctrl + scroll | Zoom |
-| Ctrl+Z / Ctrl+Shift+Z | Desfazer / Refazer |
-| Ctrl+D | Duplicar |
-| Ctrl+A | Selecionar tudo |
-| Setas (Shift = 10px) | Mover seleção |
-| Delete | Excluir |
-| Duplo clique no texto | Editar texto |
+| Espaço + arrastar, Ctrl + scroll | Pan, zoom |
+| Shift+1 / Shift+2 / Shift+0 | Ajustar à tela / à seleção / 100% |
+| Ctrl+Z / Ctrl+Shift+Z | Desfazer / refazer |
+| Ctrl+C / X / V / D | Copiar / recortar / colar / duplicar |
+| Ctrl+] / Ctrl+[ (com Shift: frente/trás) | Ordem das camadas |
+| Alt+A / D / W / S / H / V | Alinhar |
+| Ctrl+K | Perguntar ao Claude |
 
 ## Próximos passos
 
 - Grupos e frames aninhados, auto layout
-- Snapping e guias inteligentes
-- Exportar PNG/SVG
 - Enviar uma captura do canvas ao Claude (visão) para ele avaliar o próprio layout
 - Colaboração em tempo real (CRDT/Yjs)

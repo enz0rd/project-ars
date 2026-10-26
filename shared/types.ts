@@ -16,12 +16,21 @@ export interface DesignNode {
   opacity: number;
   visible: boolean;
   locked: boolean;
+  shadow?: Shadow | null;
   // text-only
   text?: string;
   fontSize?: number;
   fontWeight?: number;
   fontFamily?: string;
   textAlign?: "left" | "center" | "right";
+}
+
+export interface Shadow {
+  x: number;
+  y: number;
+  blur: number;
+  /** Hex color, optionally with alpha (#RRGGBBAA). */
+  color: string;
 }
 
 /** Nodes are stored flat; array order is z-order (last = top). */
@@ -48,12 +57,15 @@ export type AiEvent =
 
 /** Events pushed to open editors over GET /api/live (edits made through MCP). */
 export type LiveEvent =
-  | { type: "hello"; rev: number }
+  | { type: "hello"; clientId: string }
   | { type: "ops"; rev: number; ops: DocOp[] }
-  | { type: "select"; ids: string[] };
+  | { type: "select"; ids: string[] }
+  /** Whether this editor is the one MCP clients currently read and edit. */
+  | { type: "target"; active: boolean };
 
 /** Snapshot an editor sends to PUT /api/live/document after each local change. */
 export interface LiveSnapshot {
+  clientId: string;
   /** Last LiveEvent rev the editor applied; stale snapshots are ignored. */
   rev: number;
   name: string;

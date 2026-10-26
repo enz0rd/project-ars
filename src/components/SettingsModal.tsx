@@ -1,11 +1,21 @@
+import { Check, Copy, KeyRound, Plug, Terminal, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { McpServerInput, PublicSettings } from "../../shared/types.ts";
 import { useSettings } from "../settings.ts";
+
+type Tab = "key" | "mcp" | "claude-code";
+
+const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
+  { id: "key", label: "Chave da API", icon: <KeyRound size={14} /> },
+  { id: "mcp", label: "Servidores MCP", icon: <Plug size={14} /> },
+  { id: "claude-code", label: "Claude Code", icon: <Terminal size={14} /> },
+];
 
 export function SettingsModal() {
   const open = useSettings((s) => s.open);
   const setOpen = useSettings((s) => s.setOpen);
   const settings = useSettings((s) => s.settings);
+  const [tab, setTab] = useState<Tab>("key");
 
   useEffect(() => {
     if (!open) return;
@@ -18,22 +28,108 @@ export function SettingsModal() {
 
   return (
     <div className="modal-backdrop" onPointerDown={(e) => e.target === e.currentTarget && setOpen(false)}>
-      <div className="modal" role="dialog" aria-labelledby="settings-title" onKeyDown={(e) => e.stopPropagation()}>
+      <div className="modal settings" role="dialog" aria-labelledby="settings-title" onKeyDown={(e) => {
+          // Keep editor shortcuts from firing while typing here.
+          e.stopPropagation();
+          if (e.key === "Escape") setOpen(false);
+        }}
+      >
         <header className="modal-header">
           <h2 id="settings-title">Configurações</h2>
-          <button className="icon-close" onClick={() => setOpen(false)} aria-label="Fechar">
-            ✕
+          <button className="icon-btn" onClick={() => setOpen(false)} aria-label="Fechar">
+            <X size={16} />
           </button>
         </header>
-        {settings ? (
+        <div className="settings-layout">
+          <nav className="settings-nav">
+            {TABS.map((t) => (
+              <button key={t.id} className={tab === t.id ? "active" : ""} onClick={() => setTab(t.id)}>
+                {t.icon} {t.label}
+              </button>
+            ))}
+          </nav>
           <div className="modal-body">
-            <ApiKeySection settings={settings} />
-            <McpSection settings={settings} />
+            {!settings ? (
+              <div className="muted">Carregando…</div>
+            ) : tab === "key" ? (
+              <ApiKeySection settings={settings} />
+            ) : tab === "mcp" ? (
+              <McpSection settings={settings} />
+            ) : (
+              <ClaudeCodeSection />
+            )}
           </div>
-        ) : (
-          <div className="modal-body muted">Carregando…</div>
-        )}
+        </div>
       </div>
+    </div>
+  );
+}
+
+function ClaudeCodeSection() {
+  const live = useSettings((s) => s.live);
+  const [mcpUrl, setMcpUrl] = useState("http://127.0.0.1:8787/mcp");
+
+  useEffect(() => {
+    fetch("/api/health")
+      .then((r) => r.json())
+      .then((d) => d.mcpUrl && setMcpUrl(d.mcpUrl))
+      .catch(() => {});
+  }, []);
+
+  const desktopConfig = JSON.stringify(
+    { mcpServers: { "figma-claude": { command: "npx", args: ["-y", "mcp-remote", mcpUrl] } } },
+    null,
+    2,
+  );
+
+  return (
+    <section className="settings-section">
+      <h3>Controlar este editor pelo Claude Code</h3>
+      <p className="muted">
+        Este app também é um servidor MCP. Conecte o Claude Code (ou o Claude Desktop) e ele poderá ler e editar o canvas
+        aberto aqui, ao vivo. Cada ação dele vira um passo de desfazer.
+      </p>
+
+      <div className="key-status">
+        <span className={`dot ${live.target ? "ok" : "off"}`} />
+        {!live.connected
+          ? "Editor desconectado do servidor"
+          : live.target
+            ? "O MCP está lendo e editando esta aba"
+            : "Outra aba aberta está ativa para o MCP — volte a ela ou edite algo aqui para trocar"}
+      </div>
+
+      <div className="form-title">Claude Code — rode no terminal</div>
+      <CopyBlock text={`claude mcp add --transport http figma-claude ${mcpUrl}`} />
+
+      <div className="form-title">Claude Desktop — claude_desktop_config.json</div>
+      <CopyBlock text={desktopConfig} />
+
+      <p className="muted small">
+        Ferramentas: get_document, create_nodes, update_nodes, delete_nodes, reorder_node, select_nodes. O servidor só aceita
+        conexões desta máquina.
+      </p>
+    </section>
+  );
+}
+
+function CopyBlock({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="copy-block">
+      <pre>{text}</pre>
+      <button
+        className="icon-btn sm"
+        title="Copiar"
+        onClick={() => {
+          navigator.clipboard.writeText(text).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          });
+        }}
+      >
+        {copied ? <Check size={14} /> : <Copy size={14} />}
+      </button>
     </div>
   );
 }
@@ -114,10 +210,10 @@ function ApiKeySection({ settings }: { settings: PublicSettings }) {
           spellCheck={false}
           onChange={(e) => setKey(e.target.value)}
         />
-        <button type="button" className="secondary" disabled={busy || (!key.trim() && !apiKey.configured)} onClick={test}>
+        <button type="button" className="btn subtle" disabled={busy || (!key.trim() && !apiKey.configured)} onClick={test}>
           Testar
         </button>
-        <button type="submit" className="primary" disabled={busy || !key.trim()}>
+        <button type="submit" className="btn primary" disabled={busy || !key.trim()}>
           Salvar
         </button>
       </form>
@@ -251,7 +347,7 @@ function McpSection({ settings }: { settings: PublicSettings }) {
           {editingId && (
             <button
               type="button"
-              className="secondary"
+              className="btn subtle"
               onClick={() => {
                 setEditingId(null);
                 setForm(EMPTY_FORM);
@@ -261,7 +357,7 @@ function McpSection({ settings }: { settings: PublicSettings }) {
               Cancelar
             </button>
           )}
-          <button type="submit" className="primary" disabled={busy || !form.name.trim() || !form.url.trim()}>
+          <button type="submit" className="btn primary" disabled={busy || !form.name.trim() || !form.url.trim()}>
             {editingId ? "Salvar" : "Adicionar"}
           </button>
         </div>

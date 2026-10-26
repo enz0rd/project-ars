@@ -1,10 +1,11 @@
 import { create } from "zustand";
 import type { PublicSettings } from "../shared/types.ts";
+import type { LiveStatus } from "./live.ts";
 
 interface SettingsState {
   open: boolean;
-  /** Whether this editor is connected to the server's live/MCP bridge. */
-  liveConnected: boolean;
+  /** This editor's connection to the server's live/MCP bridge. */
+  live: LiveStatus;
   settings: PublicSettings | null;
   setOpen: (open: boolean) => void;
   refresh: () => Promise<void>;
@@ -14,7 +15,7 @@ interface SettingsState {
 
 export const useSettings = create<SettingsState>((set, get) => ({
   open: false,
-  liveConnected: false,
+  live: { connected: false, target: false },
   settings: null,
 
   setOpen: (open) => {
