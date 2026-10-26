@@ -3,6 +3,8 @@ import type { PublicSettings } from "../shared/types.ts";
 
 interface SettingsState {
   open: boolean;
+  /** Whether this editor is connected to the server's live/MCP bridge. */
+  liveConnected: boolean;
   settings: PublicSettings | null;
   setOpen: (open: boolean) => void;
   refresh: () => Promise<void>;
@@ -12,6 +14,7 @@ interface SettingsState {
 
 export const useSettings = create<SettingsState>((set, get) => ({
   open: false,
+  liveConnected: false,
   settings: null,
 
   setOpen: (open) => {

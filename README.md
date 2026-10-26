@@ -31,7 +31,7 @@ http://127.0.0.1:8787 (o Vite faz proxy de `/api`).
 
 - As configurações ficam em `data/settings.json` no servidor (fora do git, permissão `600`). A chave e os
   tokens MCP **nunca voltam para o navegador** — a tela mostra só os últimos 4 caracteres.
-- O servidor escuta apenas em `127.0.0.1` e recusa `Host` diferente de localhost, porque os endpoints de
+- O servidor escuta apenas em `127.0.0.1` e recusa `Host` e `Origin` diferentes de localhost, porque os endpoints de
   configuração podem trocar a chave em uso. Se expor com `HOST=0.0.0.0`, coloque autenticação na frente.
 - Servidores MCP usam o [MCP connector](https://platform.claude.com/docs/en/agents-and-tools/mcp-connector)
   (beta `mcp-client-2025-11-20`): quem se conecta ao servidor MCP é a API da Anthropic, então a URL precisa
@@ -40,15 +40,36 @@ http://127.0.0.1:8787 (o Vite faz proxy de `/api`).
 
 Produção: `npm run build && npm start` (o servidor Express também serve o `dist/`).
 
+## Controlar o editor pelo Claude Code / Claude Desktop (MCP)
+
+O servidor também é um **servidor MCP** em `http://127.0.0.1:8787/mcp` (Streamable HTTP). Com o editor
+aberto no navegador, o Claude Code ou o Desktop consegue ler e editar o canvas ao vivo.
+
+```bash
+claude mcp add --transport http figma-claude http://127.0.0.1:8787/mcp
+```
+
+Ferramentas: `get_document`, `create_nodes`, `update_nodes`, `delete_nodes`, `reorder_node`, `select_nodes`.
+Cada chamada vira um passo de desfazer no editor. Sem nenhum editor aberto, as ferramentas respondem com
+erro pedindo para abrir o app.
+
+Como funciona: o navegador envia um snapshot do documento a cada mudança (`PUT /api/live/document`) e
+escuta `GET /api/live` (SSE). As ferramentas MCP editam o snapshot e transmitem as operações para todos os
+editores abertos. Snapshots atrasados (anteriores à última operação MCP) são ignorados.
+
 ## Arquitetura
 
 ```
 shared/types.ts        modelo do documento (DesignNode), operações (DocOp) e eventos SSE
 server/index.ts        Express: POST /api/ai (SSE) + arquivos estáticos em produção
 server/ai.ts           agente de design: Tool Runner do SDK da Anthropic + ferramentas Zod + MCP
+server/docTools.ts     ferramentas de edição do canvas, compartilhadas entre o agente e o MCP
+server/live.ts         ponte ao vivo navegador ↔ servidor (snapshot + SSE)
+server/mcp.ts          servidor MCP em /mcp
 server/settings.ts     chave da API e servidores MCP persistidos em data/settings.json
 src/store.ts           estado do editor (zustand), histórico de undo, persistência
 src/settings.ts        estado da tela de configurações
+src/live.ts            sincroniza o editor com a ponte ao vivo
 src/components/        Canvas, Toolbar, LayersPanel, PropertiesPanel, AiPanel, SettingsModal
 ```
 

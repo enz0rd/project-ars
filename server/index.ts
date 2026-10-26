@@ -2,9 +2,12 @@ import "dotenv/config";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
+import { localhostHostValidation, localhostOriginValidation } from "@modelcontextprotocol/node";
 import express from "express";
 import type { AiEvent, AiRequest } from "../shared/types.ts";
 import { MODEL, MissingApiKeyError, createClient, runDesignAgent } from "./ai.ts";
+import { liveRouter } from "./live.ts";
+import { mcpNodeHandler } from "./mcp.ts";
 import {
   SettingsError,
   addMcpServer,
@@ -15,17 +18,23 @@ import {
 } from "./settings.ts";
 
 const port = Number(process.env.PORT ?? 8787);
-// Localhost only by default: these endpoints can read and change the API key in use.
+// Localhost only by default: these endpoints change the API key in use and edit the open document.
 const host = process.env.HOST ?? "127.0.0.1";
-const LOOPBACK_NAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 const app = express();
-// When bound to loopback, also reject foreign Host headers (DNS-rebinding protection).
-app.use((req, res, next) => {
-  if (LOOPBACK_NAMES.has(host) && !LOOPBACK_NAMES.has(req.hostname)) res.status(403).end();
-  else next();
-});
+// When bound to loopback, reject foreign Host headers (DNS rebinding) and requests from
+// other websites' pages (Origin), for the API and the MCP endpoint alike.
+if (["localhost", "127.0.0.1", "::1"].includes(host)) {
+  const validHost = localhostHostValidation();
+  const validOrigin = localhostOriginValidation();
+  app.use((req, res, next) => {
+    if (validHost(req, res) && validOrigin(req, res)) next();
+  });
+}
 app.use(express.json({ limit: "10mb" }));
+
+app.use("/api/live", liveRouter);
+app.all("/mcp", (req, res) => void mcpNodeHandler(req, res, req.body));
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });

@@ -5,12 +5,14 @@ import { LayersPanel } from "./components/LayersPanel.tsx";
 import { PropertiesPanel } from "./components/PropertiesPanel.tsx";
 import { SettingsModal } from "./components/SettingsModal.tsx";
 import { TOOL_KEYS, Toolbar } from "./components/Toolbar.tsx";
+import { connectLive } from "./live.ts";
 import { useSettings } from "./settings.ts";
 import { useEditor } from "./store.ts";
 
 export function App() {
   useEffect(() => {
     useSettings.getState().refresh().catch(() => {});
+    return connectLive((connected) => useSettings.setState({ liveConnected: connected }));
   }, []);
 
   useEffect(() => {

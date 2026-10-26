@@ -46,6 +46,21 @@ export type AiEvent =
   | { type: "error"; message: string }
   | { type: "done" };
 
+/** Events pushed to open editors over GET /api/live (edits made through MCP). */
+export type LiveEvent =
+  | { type: "hello"; rev: number }
+  | { type: "ops"; rev: number; ops: DocOp[] }
+  | { type: "select"; ids: string[] };
+
+/** Snapshot an editor sends to PUT /api/live/document after each local change. */
+export interface LiveSnapshot {
+  /** Last LiveEvent rev the editor applied; stale snapshots are ignored. */
+  rev: number;
+  name: string;
+  nodes: DesignNode[];
+  selection: string[];
+}
+
 export interface AiChatTurn {
   role: "user" | "assistant";
   text: string;
