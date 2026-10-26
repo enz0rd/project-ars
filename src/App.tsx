@@ -3,13 +3,19 @@ import { AiPanel } from "./components/AiPanel.tsx";
 import { Canvas, isTyping } from "./components/Canvas.tsx";
 import { LayersPanel } from "./components/LayersPanel.tsx";
 import { PropertiesPanel } from "./components/PropertiesPanel.tsx";
+import { SettingsModal } from "./components/SettingsModal.tsx";
 import { TOOL_KEYS, Toolbar } from "./components/Toolbar.tsx";
+import { useSettings } from "./settings.ts";
 import { useEditor } from "./store.ts";
 
 export function App() {
   useEffect(() => {
+    useSettings.getState().refresh().catch(() => {});
+  }, []);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (isTyping(e)) return;
+      if (isTyping(e) || useSettings.getState().open) return;
       const s = useEditor.getState();
       const mod = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
@@ -61,6 +67,7 @@ export function App() {
           <AiPanel />
         </div>
       </div>
+      <SettingsModal />
     </div>
   );
 }

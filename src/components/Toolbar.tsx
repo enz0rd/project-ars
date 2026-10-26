@@ -1,3 +1,4 @@
+import { useSettings } from "../settings.ts";
 import { useEditor, type Tool } from "../store.ts";
 
 const TOOLS: { tool: Tool; label: string; key: string; icon: string }[] = [
@@ -20,6 +21,7 @@ export function Toolbar() {
   const redo = useEditor((s) => s.redo);
   const canUndo = useEditor((s) => s.past.length > 0);
   const canRedo = useEditor((s) => s.future.length > 0);
+  const openSettings = useSettings((s) => s.setOpen);
 
   return (
     <header className="toolbar">
@@ -45,6 +47,7 @@ export function Toolbar() {
           Importar
           <input type="file" accept="application/json" hidden onChange={importJson} />
         </label>
+        <button className="tool-btn" title="Configurações" onClick={() => openSettings(true)}>⚙</button>
       </div>
     </header>
   );

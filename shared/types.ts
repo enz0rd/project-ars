@@ -41,6 +41,8 @@ export type DocOp =
 export type AiEvent =
   | { type: "text"; text: string }
   | { type: "op"; op: DocOp }
+  /** Claude called a tool on a connected MCP server. */
+  | { type: "mcp"; server: string; tool: string }
   | { type: "error"; message: string }
   | { type: "done" };
 
@@ -54,6 +56,23 @@ export interface AiRequest {
   document: DesignDocument;
   selection: string[];
   history: AiChatTurn[];
+}
+
+export interface McpServerInput {
+  name: string;
+  url: string;
+  authorizationToken?: string;
+  enabled?: boolean;
+}
+
+/** Settings as the browser sees them: secrets are never included. */
+export interface PublicSettings {
+  apiKey: {
+    configured: boolean;
+    source: "settings" | "env" | null;
+    last4: string | null;
+  };
+  mcpServers: { id: string; name: string; url: string; enabled: boolean; hasToken: boolean }[];
 }
 
 export const NODE_DEFAULTS: Omit<DesignNode, "id" | "type" | "name"> = {

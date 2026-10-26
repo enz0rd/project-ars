@@ -125,3 +125,64 @@ button:disabled { opacity: 0.4; cursor: default; }
 }
 .composer textarea:focus { border-color: var(--accent-ai); }
 .primary { align-self: flex-end; border: 0; border-radius: 6px; padding: 6px 14px; background: var(--accent-ai); color: #fff; font-weight: 600; }
+
+/* Settings */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); display: grid; place-items: center; z-index: 10;
+  padding: 16px;
+}
+.modal {
+  width: min(560px, 100%); max-height: 90vh; display: flex; flex-direction: column;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.5);
+}
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.modal-header h2 { margin: 0; font-size: 15px; }
+.icon-close { border: 0; background: transparent; font-size: 14px; color: var(--muted); }
+.modal-body { overflow: auto; padding: 4px 18px 18px; }
+.settings-section { padding: 14px 0; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+.settings-section:last-child { border-bottom: 0; }
+.settings-section h3 { margin: 0; font-size: 13px; }
+.settings-section p { margin: 0; line-height: 1.5; }
+.settings-section a { color: var(--accent); }
+.row { display: flex; gap: 6px; align-items: center; }
+.row.end { justify-content: flex-end; }
+.input {
+  flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 7px 9px; outline: none;
+}
+.input:focus { border-color: var(--accent-ai); }
+.input.name { flex: 0 0 140px; }
+.secondary { border: 1px solid var(--border); background: transparent; border-radius: 6px; padding: 6px 12px; }
+.secondary:hover:not(:disabled) { background: var(--panel-2); }
+.key-status { display: flex; align-items: center; gap: 6px; }
+.key-status code { background: var(--panel-2); padding: 1px 5px; border-radius: 4px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot.ok { background: #3ecf8e; }
+.dot.off { background: #777; }
+.status { padding: 7px 9px; border-radius: 6px; }
+.status.ok { background: rgba(62, 207, 142, 0.15); color: #7fe0b3; }
+.status.err { background: rgba(224, 82, 82, 0.15); color: #f0a0a0; }
+.link-btn.danger { color: #f08a8a; align-self: flex-start; padding: 0; }
+.mcp-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.mcp-list li { display: flex; align-items: center; gap: 10px; background: var(--panel-2); border-radius: 8px; padding: 8px 10px; }
+.mcp-list li.disabled .mcp-info { opacity: 0.5; }
+.mcp-list .link-btn { margin: 0; padding: 0; }
+.mcp-info { flex: 1; min-width: 0; }
+.mcp-name { font-weight: 600; display: flex; gap: 6px; align-items: center; }
+.mcp-url { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tag { font-size: 10px; font-weight: 500; background: var(--border); padding: 0 5px; border-radius: 4px; }
+.mcp-form { display: flex; flex-direction: column; gap: 6px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; }
+.form-title { font-weight: 600; color: var(--muted); }
+.switch { position: relative; width: 28px; height: 16px; flex: none; }
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.switch span { position: absolute; inset: 0; background: #555; border-radius: 8px; cursor: pointer; transition: background .15s; }
+.switch span::after {
+  content: ""; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: transform .15s;
+}
+.switch input:checked + span { background: var(--accent-ai); }
+.switch input:checked + span::after { transform: translateX(12px); }
+.setup-banner {
+  display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 8px;
+  border: 1px solid var(--accent-ai); background: rgba(217, 119, 87, 0.1);
+}
+.mcp-count { font-size: 10px; font-weight: 500; color: var(--muted); border: 1px solid var(--border); padding: 0 5px; border-radius: 4px; }
+.mcp-calls { font-size: 11px; color: var(--muted); margin-bottom: 4px; }

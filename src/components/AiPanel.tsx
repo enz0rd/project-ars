@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { AiChatTurn, AiEvent, AiRequest } from "../../shared/types.ts";
+import { useSettings } from "../settings.ts";
 import { useEditor } from "../store.ts";
 
 interface ChatMessage extends AiChatTurn {
   error?: boolean;
   edits?: number;
+  mcpCalls?: string[];
 }
 
 const SUGGESTIONS = [
@@ -19,6 +21,10 @@ export function AiPanel() {
   const [busy, setBusy] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const settings = useSettings((s) => s.settings);
+  const openSettings = useSettings((s) => s.setOpen);
+  const missingKey = settings !== null && !settings.apiKey.configured;
+  const activeMcp = settings?.mcpServers.filter((m) => m.enabled).length ?? 0;
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
@@ -60,6 +66,8 @@ export function AiPanel() {
         else if (event.type === "op") {
           useEditor.getState().applyOps([event.op]);
           patchLast((m) => ({ ...m, edits: (m.edits ?? 0) + 1 }));
+        } else if (event.type === "mcp") {
+          patchLast((m) => ({ ...m, mcpCalls: [...(m.mcpCalls ?? []), `${event.server} › ${event.tool}`] }));
         } else if (event.type === "error") patchLast((m) => ({ ...m, text: event.message, error: true }));
       }
     } catch (err) {
@@ -76,6 +84,11 @@ export function AiPanel() {
     <aside className="panel ai">
       <div className="panel-title">
         Claude <span className="badge">IA</span>
+        {activeMcp > 0 && (
+          <span className="mcp-count" title="Servidores MCP ativos">
+            MCP · {activeMcp}
+          </span>
+        )}
         {messages.length > 0 && (
           <button className="link-btn" onClick={() => setMessages([])} disabled={busy}>
             Limpar
@@ -84,6 +97,14 @@ export function AiPanel() {
       </div>
 
       <div className="chat" ref={listRef}>
+        {missingKey && (
+          <div className="setup-banner">
+            Configure sua chave da API para usar o Claude.
+            <button className="primary" onClick={() => openSettings(true)}>
+              Configurar
+            </button>
+          </div>
+        )}
         {messages.length === 0 && (
           <div className="suggestions">
             <p className="muted">Descreva o que quer desenhar ou alterar. O Claude edita o canvas ao vivo.</p>
@@ -96,6 +117,13 @@ export function AiPanel() {
         )}
         {messages.map((m, i) => (
           <div key={i} className={`msg ${m.role} ${m.error ? "error" : ""}`}>
+            {!!m.mcpCalls?.length && (
+              <div className="mcp-calls">
+                {m.mcpCalls.map((c, j) => (
+                  <div key={j}>⚡ {c}</div>
+                ))}
+              </div>
+            )}
             {m.text || (busy && i === messages.length - 1 ? <span className="typing">Pensando…</span> : null)}
             {!!m.edits && <div className="edits">{m.edits} alteraç{m.edits === 1 ? "ão" : "ões"} no canvas</div>}
           </div>
