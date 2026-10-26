@@ -223,7 +223,8 @@ function DocumentInfo() {
           <li>{t("props.tip3")}</li>
         </ul>
         <button className="btn ai grow" onClick={askAssistant}>
-          <Sparkles size={14} /> {t("props.askLayout")}
+          <Sparkles size={14} /> 
+          <span>{t("props.askLayout")}</span>
         </button>
       </Section>
     </div>

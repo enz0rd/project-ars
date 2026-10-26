@@ -5,7 +5,7 @@ authentication, image storage and live updates are **Supabase**.
 
 ```
 browser ──► Vercel: static app (dist/)
-        ──► Vercel function: /api/*, /mcp  ──► Supabase Postgres / Auth / Storage (service role)
+        ──► Vercel function: /api/*, /mcp  ──► Supabase Postgres / Auth / Storage (secret key)
         ──► Supabase Auth, Postgres (RLS), Storage, Realtime (anon key + user session)
 agents  ──► /mcp (personal access token)  ──► Realtime broadcast ──► open editor
 ```
@@ -38,8 +38,8 @@ agents  ──► /mcp (personal access token)  ──► Realtime broadcast ─
    is heavily rate limited.
 6. **Realtime → Settings**: turn off **Allow public access**, so only private (authorized)
    channels exist.
-7. **Project Settings → API**: copy the project URL, the publishable/anon key and the
-   **service_role** key.
+7. **Project Settings → API Keys**: copy the project URL, the **publishable** key
+   (`sb_publishable_…`) and create a **secret** key (`sb_secret_…`) for the API.
 
 ## 2. Encryption key
 
@@ -61,15 +61,17 @@ database dump, exposes them.
    | Variable | Value | Exposed to the browser |
    | --- | --- | --- |
    | `VITE_SUPABASE_URL` | project URL | yes |
-   | `VITE_SUPABASE_ANON_KEY` | publishable/anon key | yes |
+   | `VITE_SUPABASE_ANON_KEY` | publishable key (`sb_publishable_…`) | yes |
    | `SUPABASE_URL` | project URL | no |
-   | `SUPABASE_SERVICE_ROLE_KEY` | service_role key | **no — never prefix with `VITE_`** |
+   | `SUPABASE_SECRET_KEY` | secret key (`sb_secret_…`) | **no — never prefix with `VITE_`** |
    | `ARS_ENCRYPTION_KEY` | from step 2 | no |
    | `VITE_AUTH_GITHUB` | `true` (optional) | yes |
    | `VITE_REPO_URL` | your repository URL (optional) | yes |
    | `CLAUDE_MODEL`, `CLAUDE_EFFORT` | optional overrides | no |
 
    `VITE_*` values are baked in at build time: redeploy after changing them.
+   The Vercel build fails fast if `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY`
+   is missing (or if `VITE_SUPABASE_URL` is non-HTTPS outside localhost).
 3. **Settings → Functions**: set the function region to match Supabase, and keep Fluid compute on
    (assistant replies stream for up to 300 s).
 4. **Settings → Deployment Protection**: if Preview deployments use the production Supabase

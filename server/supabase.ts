@@ -5,7 +5,7 @@ let admin: SupabaseClient | undefined;
 
 /** Service-role client: bypasses row level security, so every query must filter by user itself. */
 export function db(): SupabaseClient {
-  admin ??= createClient(env.supabaseUrl, env.serviceRoleKey, {
+  admin ??= createClient(env.supabaseUrl, env.secretKey, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
   return admin;

@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { assertPublicHost } from "./assets.ts";
+import { assertPublicHost, fetchPublicUrl } from "./assets.ts";
 import { decryptSecret, encryptSecret, newAccessToken } from "./crypto.ts";
 import { UserError } from "./errors.ts";
 import { db, must, rows } from "./supabase.ts";
@@ -94,7 +94,7 @@ export async function testAiKey(userId: string, provider: AiProvider, input: { a
   const key = input.apiKey?.trim() || saved(row?.openai_key_enc);
   if (!key) throw new UserError("no_key");
   const baseUrl = await checkBaseUrl(input.baseUrl || row?.openai_base_url || "");
-  const res = await fetch(`${baseUrl}/models`, {
+  const res = await fetchPublicUrl(new URL(`${baseUrl}/models`), {
     headers: { Authorization: `Bearer ${key}` },
     redirect: "error",
     signal: AbortSignal.timeout(10_000),

@@ -86,7 +86,7 @@ export function LayersPanel() {
       </div>
       <div className="search">
         <Search size={13} />
-        <input placeholder={t("layers.search")} value={query} onChange={(e) => setQuery(e.target.value)} />
+        <input aria-label={t("layers.search")} placeholder={t("layers.search")} value={query} onChange={(e) => setQuery(e.target.value)} />
         {query && (
           <button className="icon-btn xs" onClick={() => setQuery("")} aria-label={t("layers.clearSearch")}>
             <X size={12} />
@@ -157,6 +157,7 @@ export function LayersPanel() {
                 autoFocus
                 className="layer-rename"
                 defaultValue={n.name}
+                aria-label={t("dashboard.rename")}
                 onFocus={(e) => e.currentTarget.select()}
                 onKeyDown={(e) => {
                   e.stopPropagation();
@@ -178,6 +179,7 @@ export function LayersPanel() {
               <button
                 className={`icon-btn xs ${n.locked ? "on" : ""}`}
                 title={n.locked ? t("layers.unlock") : t("layers.lock")}
+                aria-label={n.locked ? t("layers.unlock") : t("layers.lock")}
                 onClick={(e) => {
                   e.stopPropagation();
                   toggle(n.id, "locked", !n.locked);
@@ -188,6 +190,7 @@ export function LayersPanel() {
               <button
                 className={`icon-btn xs ${!n.visible ? "on" : ""}`}
                 title={n.visible ? t("layers.hide") : t("layers.show")}
+                aria-label={n.visible ? t("layers.hide") : t("layers.show")}
                 onClick={(e) => {
                   e.stopPropagation();
                   toggle(n.id, "visible", !n.visible);

@@ -9,6 +9,7 @@ const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 export const configured = !!url && !!key;
 
-export const supabase = createClient(url ?? "http://localhost:54321", key ?? "missing-anon-key", {
+// `||`, not `??`: an empty value in .env must not crash the app before it can say so.
+export const supabase = createClient(url || "http://localhost:54321", key || "missing-anon-key", {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "pkce" },
 });

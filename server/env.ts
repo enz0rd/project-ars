@@ -12,9 +12,11 @@ export const env = {
   get supabaseUrl() {
     return required("SUPABASE_URL").replace(/\/$/, "");
   },
-  /** Bypasses row level security: server-only, never expose it to the browser. */
-  get serviceRoleKey() {
-    return required("SUPABASE_SERVICE_ROLE_KEY");
+  /** Supabase secret key (sb_secret_…). Bypasses row level security: server-only, never expose it to the browser. */
+  get secretKey() {
+    const key = required("SUPABASE_SECRET_KEY");
+    if (!key.startsWith("sb_secret_")) throw new Error("SUPABASE_SECRET_KEY must be a Supabase secret key (sb_secret_…)");
+    return key;
   },
   /** 32 random bytes, base64. Encrypts users' Claude API keys and MCP server tokens. */
   get encryptionKey(): Buffer {

@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 process.env.ARS_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64");
 const { decryptSecret, encryptSecret, hashToken, newAccessToken } = await import("./crypto.ts");
-const { assertPublicHost, imageSize, isPrivateAddress } = await import("./assets.ts");
+const { assertPublicHost, fetchPublicUrl, imageSize, isPrivateAddress } = await import("./assets.ts");
 const { checkBaseUrl } = await import("./secrets.ts");
 
 const alice = "00000000-0000-0000-0000-00000000000a";
@@ -42,6 +42,7 @@ test("private and internal addresses are refused", async () => {
   await assert.rejects(assertPublicHost("127.0.0.1"));
   await assert.rejects(assertPublicHost("[::1]"));
   await assert.rejects(assertPublicHost("localhost"));
+  await assert.rejects(fetchPublicUrl(new URL("https://127.0.0.1/internal")));
 });
 
 test("provider base URLs must be public https", async () => {

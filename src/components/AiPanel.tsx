@@ -199,6 +199,7 @@ export function AiPanel() {
           <textarea
             ref={inputRef}
             value={input}
+            aria-label={selectionCount ? t("ai.placeholderSelection") : t("ai.placeholder")}
             placeholder={selectionCount ? t("ai.placeholderSelection") : t("ai.placeholder")}
             rows={1}
             onChange={(e) => setInput(e.target.value)}

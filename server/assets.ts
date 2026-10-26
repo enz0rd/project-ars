@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
 import { lookup } from "node:dns/promises";
 import { readFile } from "node:fs/promises";
-import { isIP } from "node:net";
+import { isIP, type LookupFunction } from "node:net";
 import path from "node:path";
+import { Agent, fetch as undiciFetch, type RequestInit as UndiciRequestInit, type Response as UndiciResponse } from "undici";
 import { env } from "./env.ts";
 import { UserError } from "./errors.ts";
 import { db } from "./supabase.ts";
@@ -22,6 +23,17 @@ export const IMAGE_TYPES: Record<string, string> = {
 };
 const TYPE_BY_EXT: Record<string, string> = { ...Object.fromEntries(Object.entries(IMAGE_TYPES).map(([t, e]) => [e, t])), jpeg: "image/jpeg" };
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const PUBLIC_HOST_ERROR = "That address is not allowed";
+const lookupPublicAddress: LookupFunction = (hostname, options, done) => {
+  resolvePublicAddress(hostname, options.family)
+    .then((address) => done(null, address, isIP(address)))
+    .catch((error) => done(error as Error, "", 0));
+};
+const publicNetworkAgent = new Agent({
+  connect: {
+    lookup: lookupPublicAddress,
+  },
+});
 
 export async function storeAsset(userId: string, bytes: Buffer, type: string) {
   const ext = IMAGE_TYPES[type];
@@ -61,8 +73,7 @@ async function fetchImage(raw: string, redirects = 3): Promise<{ bytes: Buffer; 
     throw new UserError("Invalid URL");
   }
   if (url.protocol !== "https:") throw new UserError("Only https URLs are allowed");
-  await assertPublicHost(url.hostname);
-  const res = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(10_000) });
+  const res = await fetchPublicUrl(url, { redirect: "manual", signal: AbortSignal.timeout(10_000) });
   if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
     if (!redirects) throw new UserError("Too many redirects");
     return fetchImage(new URL(res.headers.get("location")!, url).toString(), redirects - 1);
@@ -81,9 +92,44 @@ async function fetchImage(raw: string, redirects = 3): Promise<{ bytes: Buffer; 
 }
 
 export async function assertPublicHost(hostname: string) {
-  const host = hostname.replace(/^\[|\]$/g, "");
-  const addresses = isIP(host) ? [host] : (await lookup(host, { all: true })).map((a) => a.address);
+  const addresses = await publicAddresses(hostname);
   if (!addresses.length || addresses.some(isPrivateAddress)) throw new UserError("That address is not allowed");
+}
+
+export async function fetchPublicUrl(url: URL, init: UndiciRequestInit = {}): Promise<UndiciResponse> {
+  await assertPublicHost(url.hostname);
+  try {
+    return await undiciFetch(url, { ...init, dispatcher: publicNetworkAgent });
+  } catch (error) {
+    if (isBlockedAddressError(error)) throw new UserError(PUBLIC_HOST_ERROR);
+    throw error;
+  }
+}
+
+async function publicAddresses(hostname: string, family?: number): Promise<string[]> {
+  const host = hostname.replace(/^\[|\]$/g, "");
+  if (isIP(host)) return [host];
+  const addresses = await lookup(host, { all: true, ...(family === 4 || family === 6 ? { family } : {}) });
+  return addresses.map((a) => a.address);
+}
+
+async function resolvePublicAddress(hostname: string, family?: number | "IPv4" | "IPv6"): Promise<string> {
+  if (family === "IPv4") family = 4;
+  if (family === "IPv6") family = 6;
+  const addresses = await publicAddresses(hostname, family);
+  const address = addresses.find((ip) => !isPrivateAddress(ip));
+  if (!address) throw new Error(PUBLIC_HOST_ERROR);
+  return address;
+}
+
+function isBlockedAddressError(error: unknown): boolean {
+  let current = error;
+  for (let depth = 0; depth < 4 && current; depth++) {
+    if (current instanceof UserError && current.message === PUBLIC_HOST_ERROR) return true;
+    if (current instanceof Error && current.message === PUBLIC_HOST_ERROR) return true;
+    current = current instanceof Error ? current.cause : null;
+  }
+  return false;
 }
 
 export function isPrivateAddress(ip: string): boolean {

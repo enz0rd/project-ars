@@ -5,6 +5,7 @@ import { normalize } from "../shared/tree.ts";
 import { applyOp, type AiEvent, type AiRequest } from "../shared/types.ts";
 import * as docTools from "./docTools.ts";
 import type { DocTarget } from "./docTools.ts";
+import { fetchPublicUrl } from "./assets.ts";
 import { env } from "./env.ts";
 import { UserError } from "./errors.ts";
 import { enabledMcpServers, getAiConfig, type AiConfig } from "./secrets.ts";
@@ -168,7 +169,7 @@ async function runOpenAi(
   const messages: ChatMessage[] = [{ role: "system", content: SYSTEM_PROMPT }, ...history, { role: "user", content: prompt }];
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
-    const res = await fetch(`${config.baseUrl}/chat/completions`, {
+    const res = await fetchPublicUrl(new URL(`${config.baseUrl}/chat/completions`), {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.apiKey}` },
       body: JSON.stringify({ model: config.model, messages, tools }),

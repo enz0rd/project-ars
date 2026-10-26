@@ -23,8 +23,9 @@ advisory) on this repository, with steps to reproduce. We aim to answer within a
   see their own rows; `supabase/tests/policies.sql` checks this for projects, profiles, images and
   the live channel.
 - Tables holding secrets (`user_secrets`, `mcp_tokens`, `mcp_servers`, `rate_limits`) have **no**
-  client policies: only the API, with the service role, reaches them.
-- The service role key lives only in server environment variables. Server queries that use it
+  client policies: only the API, with the Supabase secret key, reaches them.
+- The secret key (`sb_secret_…`) lives only in server environment variables; it can be rotated
+  in the Supabase dashboard without downtime by creating a new one before deleting the old. Server queries that use it
   always filter by the authenticated user id.
 - Images go to a private Storage bucket, one folder per user (enforced by storage policies), and
   are shown through short-lived signed URLs.
@@ -38,7 +39,8 @@ advisory) on this repository, with steps to reproduce. We aim to answer within a
   ciphertext copied into another account's row fails to decrypt.
 - Keys are write-only: the UI only ever receives "configured" and the last 4 characters.
 - OpenAI-compatible base URLs must be `https` and resolve to public addresses (no credentials in
-  the URL, no redirects), because the server sends the user's key there.
+  the URL, no redirects), because the server sends the user's key there. Requests are also
+  DNS-validated again at connect time to block private/link-local rebinding targets.
 - Key checks and settings changes are rate limited per user.
 
 ### Agents (MCP)
@@ -50,9 +52,10 @@ advisory) on this repository, with steps to reproduce. We aim to answer within a
   credentials can't be swapped.
 - MCP tools act only on the token owner's projects. Writes are validated
   (`shared/sanitize.ts`) and saved with a compare-and-swap on the project version.
-- `import_image` downloads only from public `https` URLs, re-checking every redirect against
-  private and link-local ranges (cloud metadata included), with a size cap and a timeout. Reading
-  files from the server's disk is off unless `ARS_ALLOW_LOCAL_FILES=1` (single-user local installs).
+- `import_image` downloads only from public `https` URLs, re-checking every redirect and each
+  outgoing DNS resolution against private and link-local ranges (cloud metadata included), with a
+  size cap and a timeout. Reading files from the server's disk is off unless
+  `ARS_ALLOW_LOCAL_FILES=1` (single-user local installs).
 
 ### Limits and abuse
 
@@ -73,10 +76,6 @@ advisory) on this repository, with steps to reproduce. We aim to answer within a
 
 ## Known limitations
 
-- DNS rebinding: the `import_image` check resolves the host before fetching; a host that changes
-  its answer between the check and the request could still reach an internal address. Vercel
-  functions have no cloud-metadata endpoint, but self-hosters on a VM should keep the server off
-  sensitive internal networks.
 - Images are stored by content hash and shared between a user's projects, so deleting a project
   doesn't delete its images (deleting the account does).
 - The session lives in `localStorage` (Supabase's default for SPAs): an XSS would expose it, which

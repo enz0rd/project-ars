@@ -52,7 +52,7 @@ npm install
 npx supabase init            # once; keeps supabase/migrations
 npx supabase start           # prints the local URL and keys
 npx supabase db reset        # applies the migrations
-cp .env.example .env         # fill in the URL, anon key, service role key and ARS_ENCRYPTION_KEY
+cp .env.example .env         # fill in the URL, publishable key, secret key and ARS_ENCRYPTION_KEY
 npm run dev                  # app on http://localhost:5173, API on :8787
 ```
 

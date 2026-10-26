@@ -25,6 +25,8 @@ export function ToolRail() {
   const canUndo = useEditor((s) => s.past.length > 0);
   const canRedo = useEditor((s) => s.future.length > 0);
   const askAssistant = useUi((s) => s.askClaude);
+  const rightTab = useUi((s) => s.rightTab);
+  const assistantOpen = rightTab === "claude";
 
   return (
     <nav className="rail" aria-label={t("tool.tools")}>
@@ -50,7 +52,12 @@ export function ToolRail() {
         <Redo2 size={18} />
       </button>
       <span className="grow" />
-      <button className="rail-btn ai" title={`${t("tool.assistant")} (Ctrl+K)`} onClick={askAssistant}>
+      <button
+        className={`rail-btn ai ${assistantOpen ? "active" : ""}`}
+        title={`${t("tool.assistant")} (Ctrl+K)`}
+        aria-pressed={assistantOpen}
+        onClick={askAssistant}
+      >
         <Sparkles size={18} />
       </button>
     </nav>

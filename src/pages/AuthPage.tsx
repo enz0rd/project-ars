@@ -110,16 +110,17 @@ export function AuthPage({ mode }: { mode: Mode }) {
             </label>
           )}
           {mode !== "forgot" && (
-            <label className="field-block">
-              <span className="row">
-                {mode === "reset" ? t("auth.newPassword") : t("auth.password")}
+            <div className="field-block">
+              <div className="row">
+                <label htmlFor="auth-password">{mode === "reset" ? t("auth.newPassword") : t("auth.password")}</label>
                 {mode === "login" && (
                   <a className="link-btn small push" {...linkProps("/forgot")}>
                     {t("auth.forgotLink")}
                   </a>
                 )}
-              </span>
+              </div>
               <input
+                id="auth-password"
                 className="input"
                 type="password"
                 autoComplete={mode === "login" ? "current-password" : "new-password"}
@@ -129,7 +130,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
                 onChange={(e) => setPassword(e.target.value)}
               />
               {mode !== "login" && <small className="muted">{t("auth.passwordRule", { n: MIN_PASSWORD })}</small>}
-            </label>
+            </div>
           )}
 
           <button className="btn primary block" disabled={busy || !configured}>

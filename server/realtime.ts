@@ -15,8 +15,8 @@ export async function broadcast(projectId: string, event: LiveEvent) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      apikey: env.serviceRoleKey,
-      Authorization: `Bearer ${env.serviceRoleKey}`,
+      // Secret keys aren't JWTs: they go only in `apikey`, never as a Bearer token.
+      apikey: env.secretKey,
     },
     body: JSON.stringify({ messages: [{ topic: `project:${projectId}`, event: "live", payload, private: true }] }),
   });

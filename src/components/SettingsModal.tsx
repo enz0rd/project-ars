@@ -139,6 +139,7 @@ function AccountSection() {
         <div className="row">
           <input
             className="input"
+            aria-label={t("settings.deleteConfirmPlaceholder")}
             placeholder={t("settings.deleteConfirmPlaceholder")}
             value={confirmText}
             onChange={(e) => setConfirmText(e.target.value)}
@@ -255,6 +256,7 @@ function AnthropicForm({ settings }: { settings: PublicSettings }) {
         <input
           type="password"
           className="input"
+          aria-label={t("settings.apiKey")}
           placeholder={anthropic.configured ? t("settings.replaceKey") : "sk-ant-…"}
           value={key}
           autoComplete="off"
@@ -505,7 +507,14 @@ function AgentsSection({ settings }: { settings: PublicSettings }) {
           });
         }}
       >
-        <input className="input" placeholder={t("settings.tokenName")} value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
+        <input
+          className="input"
+          aria-label={t("settings.tokenName")}
+          placeholder={t("settings.tokenName")}
+          value={name}
+          maxLength={60}
+          onChange={(e) => setName(e.target.value)}
+        />
         <button className="btn primary" disabled={busy}>
           {t("settings.createToken")}
         </button>
@@ -622,16 +631,24 @@ function McpSection({ settings }: { settings: PublicSettings }) {
         <div className="row">
           <input
             className="input name"
+            aria-label={t("settings.serverName")}
             placeholder={t("settings.serverName")}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
-          <input className="input" placeholder="https://example.com/mcp" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} />
+          <input
+            className="input"
+            aria-label={t("settings.baseUrl")}
+            placeholder="https://example.com/mcp"
+            value={form.url}
+            onChange={(e) => setForm({ ...form, url: e.target.value })}
+          />
         </div>
         <input
           type="password"
           className="input"
           autoComplete="off"
+          aria-label={t("settings.serverToken")}
           placeholder={t("settings.serverToken")}
           value={form.authorizationToken}
           onChange={(e) => setForm({ ...form, authorizationToken: e.target.value })}

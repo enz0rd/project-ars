@@ -3,8 +3,15 @@
 //   .vercel/output/functions/api.func the Express API + MCP endpoint, bundled with esbuild
 //   .vercel/output/config.json       routing and security headers
 // Run after `vite build` (see the "vercel-build" script).
+import "dotenv/config";
 import { build } from "esbuild";
 import { cp, mkdir, rm, writeFile } from "node:fs/promises";
+
+function requiredEnv(name) {
+  const value = process.env[name]?.trim();
+  if (!value) throw new Error(`Missing ${name}. Set it in Vercel project environment variables.`);
+  return value;
+}
 
 const out = ".vercel/output";
 await rm(out, { recursive: true, force: true });
@@ -39,7 +46,14 @@ await writeFile(
 );
 
 // The browser may only talk to this origin and the project's Supabase.
-const supabase = new URL(process.env.VITE_SUPABASE_URL ?? "https://invalid.supabase.co");
+const supabase = new URL(requiredEnv("VITE_SUPABASE_URL"));
+requiredEnv("VITE_SUPABASE_ANON_KEY");
+if (!["https:", "http:"].includes(supabase.protocol)) {
+  throw new Error("VITE_SUPABASE_URL must be an http(s) URL");
+}
+if (supabase.protocol !== "https:" && !["localhost", "127.0.0.1"].includes(supabase.hostname)) {
+  throw new Error("VITE_SUPABASE_URL must use https in production");
+}
 const csp = [
   "default-src 'self'",
   "script-src 'self'",
