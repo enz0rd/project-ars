@@ -1,108 +1,53 @@
 import { useEffect } from "react";
-import * as actions from "./actions.ts";
-import { Canvas, isTyping } from "./components/Canvas.tsx";
-import { ContextMenu } from "./components/ContextMenu.tsx";
-import { LayersPanel } from "./components/LayersPanel.tsx";
-import { RightPanel } from "./components/RightPanel.tsx";
-import { SettingsModal } from "./components/SettingsModal.tsx";
-import { ShortcutsDialog } from "./components/ShortcutsDialog.tsx";
-import { Toast } from "./components/Toast.tsx";
-import { TOOL_KEYS, ToolDock } from "./components/ToolDock.tsx";
-import { TopBar } from "./components/TopBar.tsx";
-import { ZoomControls } from "./components/ZoomControls.tsx";
-import { connectLive } from "./live.ts";
-import { useSettings } from "./settings.ts";
-import { useEditor } from "./store.ts";
+import { useAuth } from "./auth.ts";
+import { useI18n, type Locale } from "./i18n/index.ts";
+import { supabase } from "./lib/supabase.ts";
+import { AuthPage } from "./pages/AuthPage.tsx";
+import { Dashboard } from "./pages/Dashboard.tsx";
+import { EditorPage } from "./pages/EditorPage.tsx";
+import { navigate, useRoute } from "./router.ts";
 import { useUi } from "./ui.ts";
 
-const ALIGN_KEYS: Record<string, actions.AlignKind> = {
-  KeyA: "left",
-  KeyD: "right",
-  KeyW: "top",
-  KeyS: "bottom",
-  KeyH: "hcenter",
-  KeyV: "vcenter",
-};
+const PUBLIC = new Set(["login", "signup", "forgot", "reset"]);
 
 export function App() {
   const theme = useUi((s) => s.theme);
+  const route = useRoute();
+  const ready = useAuth((s) => s.ready);
+  const session = useAuth((s) => s.session);
+  const recovering = useAuth((s) => s.recovering);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
+  // Signed-out visitors go to the login screen; signed-in ones skip it.
   useEffect(() => {
-    useSettings.getState().refresh().catch(() => {});
-    return connectLive((live) => useSettings.setState({ live }));
-  }, []);
+    if (!ready) return;
+    if (recovering && route.name !== "reset") navigate("/reset", true);
+    else if (!session && !PUBLIC.has(route.name)) navigate("/login", true);
+    else if (session && !recovering && (route.name === "login" || route.name === "signup")) navigate("/", true);
+  }, [ready, session, recovering, route.name]);
 
+  // The account's saved language wins over the browser's.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const ui = useUi.getState();
-      if (isTyping(e) || useSettings.getState().open || ui.shortcutsOpen) return;
-      const s = useEditor.getState();
-      const mod = e.ctrlKey || e.metaKey;
-      const key = e.key.toLowerCase();
-      const handled = () => e.preventDefault();
+    const id = session?.user.id;
+    if (!id) return;
+    void supabase
+      .from("profiles")
+      .select("locale")
+      .eq("id", id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.locale && data.locale !== useI18n.getState().locale) useI18n.getState().setLocale(data.locale as Locale);
+      });
+  }, [session?.user.id]);
 
-      if (mod && key === "k") return handled(), ui.askClaude();
-      if (mod && key === "z") return handled(), e.shiftKey ? s.redo() : s.undo();
-      if (mod && key === "y") return handled(), s.redo();
-      if (mod && key === "c") return handled(), actions.copy();
-      if (mod && key === "x") return handled(), actions.cut();
-      if (mod && key === "v") return handled(), actions.paste();
-      if (mod && key === "d") return handled(), s.duplicateSelection();
-      if (mod && key === "a") return handled(), actions.selectAll();
-      if (mod && e.shiftKey && key === "h") return handled(), actions.toggleSelection("visible");
-      if (mod && e.shiftKey && key === "l") return handled(), actions.toggleSelection("locked");
-      if (mod && e.code === "BracketRight") return handled(), actions.zOrder(e.shiftKey ? "front" : "forward");
-      if (mod && e.code === "BracketLeft") return handled(), actions.zOrder(e.shiftKey ? "back" : "backward");
-      if (mod && (key === "=" || key === "+")) return handled(), actions.zoomBy(1.25);
-      if (mod && key === "-") return handled(), actions.zoomBy(1 / 1.25);
-      if (mod && key === "0") return handled(), actions.setZoom(1);
-      if (e.altKey && !mod && ALIGN_KEYS[e.code]) return handled(), actions.align(ALIGN_KEYS[e.code]);
-      if (e.shiftKey && !mod && e.code === "Digit1") return handled(), actions.zoomToFit();
-      if (e.shiftKey && !mod && e.code === "Digit2") return handled(), actions.zoomToSelection();
-      if (e.shiftKey && !mod && e.code === "Digit0") return handled(), actions.setZoom(1);
-      if (key === "?") return handled(), ui.setShortcutsOpen(true);
-      if (key === "delete" || key === "backspace") return handled(), s.deleteSelection();
-      if (key === "escape") {
-        ui.setContextMenu(null);
-        s.select([]);
-        s.setTool("select");
-        return;
-      }
-      if (key.startsWith("arrow") && s.selection.length) {
-        handled();
-        const step = e.shiftKey ? 10 : 1;
-        const dx = key === "arrowleft" ? -step : key === "arrowright" ? step : 0;
-        const dy = key === "arrowup" ? -step : key === "arrowdown" ? step : 0;
-        s.checkpoint();
-        s.updateNodes(s.selection, (n) => (n.locked ? {} : { x: n.x + dx, y: n.y + dy }));
-        return;
-      }
-      if (!mod && !e.altKey && TOOL_KEYS[key]) s.setTool(TOOL_KEYS[key]);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  return (
-    <div className="app">
-      <TopBar />
-      <div className="workspace">
-        <LayersPanel />
-        <main className="stage">
-          <Canvas />
-          <ToolDock />
-          <ZoomControls />
-        </main>
-        <RightPanel />
-      </div>
-      <SettingsModal />
-      <ShortcutsDialog />
-      <ContextMenu />
-      <Toast />
-    </div>
-  );
+  if (!ready) return <div className="center-page" />;
+  if (route.name === "login" || route.name === "signup" || route.name === "forgot" || route.name === "reset") {
+    return <AuthPage mode={route.name} />;
+  }
+  if (!session) return <div className="center-page" />;
+  if (route.name === "editor") return <EditorPage key={route.id} id={route.id} />;
+  return <Dashboard />;
 }

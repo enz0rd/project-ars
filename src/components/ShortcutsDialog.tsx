@@ -1,56 +1,61 @@
 import { X } from "lucide-react";
+import { useT, type Key } from "../i18n/index.ts";
 import { useUi } from "../ui.ts";
 
-export const SHORTCUTS: [string, [string, string][]][] = [
+export const SHORTCUTS: [Key, [string, Key][]][] = [
   [
-    "Ferramentas",
+    "shortcuts.tools",
     [
-      ["V", "Mover"],
-      ["H / Espaço", "Mão (pan)"],
-      ["F", "Frame"],
-      ["R", "Retângulo"],
-      ["O", "Elipse"],
-      ["T", "Texto"],
+      ["V", "tool.select"],
+      ["H / Space", "tool.hand"],
+      ["A", "tool.artboard"],
+      ["R", "tool.rect"],
+      ["O", "tool.ellipse"],
+      ["T", "tool.text"],
+      ["Ctrl+Shift+K", "shortcuts.image"],
     ],
   ],
   [
-    "Edição",
+    "shortcuts.editing",
     [
-      ["Ctrl+Z / Ctrl+Shift+Z", "Desfazer / refazer"],
-      ["Ctrl+C / X / V", "Copiar / recortar / colar"],
-      ["Ctrl+D", "Duplicar"],
-      ["Alt + arrastar", "Duplicar arrastando"],
-      ["Del", "Excluir"],
-      ["Setas (Shift = 10px)", "Mover seleção"],
-      ["Ctrl + arrastar", "Mover sem guias"],
-      ["Shift + arrastar", "Travar eixo / proporção"],
+      ["Ctrl+Z / Ctrl+Shift+Z", "shortcuts.undoRedo"],
+      ["Ctrl+C / X / V", "shortcuts.clipboard"],
+      ["Ctrl+D", "menu.duplicate"],
+      ["Alt + drag", "shortcuts.altDrag"],
+      ["Del", "menu.delete"],
+      ["Arrows (Shift = 10px)", "shortcuts.nudge"],
+      ["Ctrl + drag", "shortcuts.noSnap"],
+      ["Shift + drag", "shortcuts.lockAxis"],
     ],
   ],
   [
-    "Organizar",
+    "shortcuts.arrange",
     [
-      ["Ctrl+] / Ctrl+[", "Avançar / recuar"],
-      ["Ctrl+Shift+] / [", "Frente / trás"],
-      ["Alt+A / Alt+D", "Alinhar esquerda / direita"],
-      ["Alt+W / Alt+S", "Alinhar topo / base"],
-      ["Alt+H / Alt+V", "Centralizar horizontal / vertical"],
-      ["Ctrl+Shift+H / L", "Ocultar / bloquear"],
+      ["Ctrl+G / Ctrl+Shift+G", "shortcuts.groupUngroup"],
+      ["Double-click", "shortcuts.enterGroup"],
+      ["Ctrl+] / Ctrl+[", "shortcuts.forwardBackward"],
+      ["Ctrl+Shift+] / [", "shortcuts.frontBack"],
+      ["Alt+A / Alt+D", "shortcuts.alignLR"],
+      ["Alt+W / Alt+S", "shortcuts.alignTB"],
+      ["Alt+H / Alt+V", "shortcuts.alignCenter"],
+      ["Ctrl+Shift+H / L", "shortcuts.hideLock"],
     ],
   ],
   [
-    "Visualização",
+    "shortcuts.view",
     [
-      ["Ctrl + scroll", "Zoom"],
-      ["Shift+1", "Ajustar à tela"],
-      ["Shift+2", "Zoom na seleção"],
-      ["Shift+0", "100%"],
-      ["Ctrl+K", "Perguntar ao Claude"],
-      ["?", "Esta lista"],
+      ["Ctrl + scroll", "shortcuts.zoom"],
+      ["Shift+1", "zoom.fit"],
+      ["Shift+2", "zoom.selection"],
+      ["Shift+0", "shortcuts.zoom100"],
+      ["Ctrl+K", "menu.ask"],
+      ["?", "shortcuts.thisList"],
     ],
   ],
 ];
 
 export function ShortcutsDialog() {
+  const t = useT();
   const open = useUi((s) => s.shortcutsOpen);
   const setOpen = useUi((s) => s.setShortcutsOpen);
   if (!open) return null;
@@ -59,18 +64,18 @@ export function ShortcutsDialog() {
     <div className="modal-backdrop" onPointerDown={(e) => e.target === e.currentTarget && setOpen(false)}>
       <div className="modal wide" role="dialog" aria-labelledby="shortcuts-title" onKeyDown={(e) => e.key === "Escape" && setOpen(false)}>
         <header className="modal-header">
-          <h2 id="shortcuts-title">Atalhos de teclado</h2>
-          <button className="icon-btn" onClick={() => setOpen(false)} aria-label="Fechar" autoFocus>
+          <h2 id="shortcuts-title">{t("editor.shortcuts")}</h2>
+          <button className="icon-btn" onClick={() => setOpen(false)} aria-label={t("common.close")} autoFocus>
             <X size={16} />
           </button>
         </header>
         <div className="modal-body shortcuts">
           {SHORTCUTS.map(([group, rows]) => (
             <section key={group}>
-              <h3>{group}</h3>
+              <h3>{t(group)}</h3>
               {rows.map(([keys, label]) => (
                 <div key={keys} className="shortcut-row">
-                  <span>{label}</span>
+                  <span>{t(label)}</span>
                   <kbd>{keys}</kbd>
                 </div>
               ))}

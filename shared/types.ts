@@ -1,4 +1,4 @@
-export type NodeType = "frame" | "rect" | "ellipse" | "text";
+export type NodeType = "frame" | "group" | "rect" | "ellipse" | "text" | "image";
 
 export interface DesignNode {
   id: string;
@@ -17,6 +17,10 @@ export interface DesignNode {
   visible: boolean;
   locked: boolean;
   shadow?: Shadow | null;
+  /** Containing frame or group (see shared/tree.ts). */
+  parentId?: string;
+  /** Image-only: /api/assets/<file> (or a data: URL). The image covers the box, like Figma's "Fill". */
+  src?: string;
   // text-only
   text?: string;
   fontSize?: number;
@@ -33,7 +37,7 @@ export interface Shadow {
   color: string;
 }
 
-/** Nodes are stored flat; array order is z-order (last = top). */
+/** Nodes are stored flat; array order is z-order (last = top). Hierarchy lives in `parentId`. */
 export interface DesignDocument {
   name: string;
   nodes: DesignNode[];
@@ -44,7 +48,9 @@ export type DocOp =
   | { op: "create"; node: DesignNode }
   | { op: "update"; id: string; patch: Partial<DesignNode> }
   | { op: "delete"; id: string }
-  | { op: "reorder"; id: string; index: number };
+  | { op: "reorder"; id: string; index: number }
+  /** Whole-document result of a structural edit (grouping, organizing). */
+  | { op: "replace"; nodes: DesignNode[] };
 
 /** Server-sent events emitted by POST /api/ai. */
 export type AiEvent =
@@ -55,23 +61,13 @@ export type AiEvent =
   | { type: "error"; message: string }
   | { type: "done" };
 
-/** Events pushed to open editors over GET /api/live (edits made through MCP). */
+/** Events the API broadcasts to editors that have a project open (edits made through MCP). */
 export type LiveEvent =
-  | { type: "hello"; clientId: string }
-  | { type: "ops"; rev: number; ops: DocOp[] }
-  | { type: "select"; ids: string[] }
-  /** Whether this editor is the one MCP clients currently read and edit. */
-  | { type: "target"; active: boolean };
-
-/** Snapshot an editor sends to PUT /api/live/document after each local change. */
-export interface LiveSnapshot {
-  clientId: string;
-  /** Last LiveEvent rev the editor applied; stale snapshots are ignored. */
-  rev: number;
-  name: string;
-  nodes: DesignNode[];
-  selection: string[];
-}
+  /** Ops already saved as `version`. */
+  | { type: "ops"; version: number; ops: DocOp[] }
+  /** Too big to send: fetch the project again. */
+  | { type: "reload"; version: number }
+  | { type: "select"; ids: string[] };
 
 export interface AiChatTurn {
   role: "user" | "assistant";
@@ -79,27 +75,25 @@ export interface AiChatTurn {
 }
 
 export interface AiRequest {
+  projectId: string;
   prompt: string;
   document: DesignDocument;
   selection: string[];
   history: AiChatTurn[];
 }
 
-export interface McpServerInput {
-  name: string;
-  url: string;
-  authorizationToken?: string;
-  enabled?: boolean;
-}
-
 /** Settings as the browser sees them: secrets are never included. */
 export interface PublicSettings {
-  apiKey: {
-    configured: boolean;
-    source: "settings" | "env" | null;
-    last4: string | null;
+  ai: {
+    /** Which provider the in-app assistant uses. */
+    provider: "anthropic" | "openai";
+    anthropic: { configured: boolean; last4: string | null };
+    /** Any OpenAI-compatible Chat Completions API. */
+    openai: { configured: boolean; last4: string | null; baseUrl: string | null; model: string | null };
   };
   mcpServers: { id: string; name: string; url: string; enabled: boolean; hasToken: boolean }[];
+  /** MCP personal access tokens (only a hint of each). */
+  tokens: { id: string; name: string; hint: string; created_at: string; last_used_at: string | null }[];
 }
 
 export const NODE_DEFAULTS: Omit<DesignNode, "id" | "type" | "name"> = {
@@ -123,8 +117,14 @@ export function applyOp(nodes: DesignNode[], op: DocOp): DesignNode[] {
       return [...nodes.filter((n) => n.id !== op.node.id), op.node];
     case "update":
       return nodes.map((n) => (n.id === op.id ? { ...n, ...op.patch, id: n.id } : n));
-    case "delete":
-      return nodes.filter((n) => n.id !== op.id);
+    case "delete": {
+      // Deleting a frame or group deletes its contents too.
+      const doomed = new Set([op.id]);
+      for (const n of nodes) if (n.parentId && doomed.has(n.parentId)) doomed.add(n.id);
+      return nodes.filter((n) => !doomed.has(n.id));
+    }
+    case "replace":
+      return op.nodes;
     case "reorder": {
       const node = nodes.find((n) => n.id === op.id);
       if (!node) return nodes;

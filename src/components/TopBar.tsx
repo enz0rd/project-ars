@@ -1,113 +1,111 @@
-import { FileJson, FolderOpen, ImageDown, Keyboard, Moon, Settings, Share2, Sparkles, Sun } from "lucide-react";
-import { exportPng, exportSvg } from "../actions.ts";
+import { Cloud, CloudOff, FileJson, Keyboard, LoaderCircle, Moon, Radio, Settings, Shapes, Share2, Sun, ImageDown } from "lucide-react";
+import { exportFigma, exportPng, exportSvg } from "../actions.ts";
 import { download } from "../export.ts";
+import { useT } from "../i18n/index.ts";
+import { linkProps } from "../router.ts";
 import { useSettings } from "../settings.ts";
 import { useEditor } from "../store.ts";
+import { useSync } from "../sync.ts";
 import { useUi } from "../ui.ts";
+import { ArsMark } from "./Brand.tsx";
 import { MenuButton } from "./Menu.tsx";
 
 export function TopBar() {
+  const t = useT();
   const docName = useEditor((s) => s.docName);
   const setDocName = useEditor((s) => s.setDocName);
+  const hasSelection = useEditor((s) => s.selection.length > 0);
   const theme = useUi((s) => s.theme);
   const setTheme = useUi((s) => s.setTheme);
   const setShortcutsOpen = useUi((s) => s.setShortcutsOpen);
   const openSettings = useSettings((s) => s.setOpen);
-  const live = useSettings((s) => s.live);
-  const hasSelection = useEditor((s) => s.selection.length > 0);
+  const status = useSync((s) => s.status);
+  const live = useSync((s) => s.live);
+  const scope = hasSelection ? t("export.selection") : t("export.all");
 
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <div className="logo" title="Figma Claude">
-          <Sparkles size={16} />
-        </div>
-        <MenuButton
-          className="btn ghost"
-          title="Arquivo"
-          items={[
-            { label: "Abrir JSON…", icon: <FolderOpen size={14} />, onSelect: openJson },
-            { label: "Salvar como JSON", icon: <FileJson size={14} />, onSelect: saveJson },
-          ]}
-        >
-          Arquivo
-        </MenuButton>
+        <a className="home-link" title={t("nav.projects")} {...linkProps("/")}>
+          <ArsMark size={26} />
+        </a>
+        <a className="crumb" {...linkProps("/")}>
+          {t("nav.projects")}
+        </a>
         <span className="crumb-sep">/</span>
         <input
           className="doc-name"
           value={docName}
           onChange={(e) => setDocName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-          aria-label="Nome do documento"
+          aria-label={t("editor.projectName")}
+          maxLength={120}
         />
+        <SaveStatus status={status} />
       </div>
 
       <div className="topbar-right">
-        <span
-          className={`live-pill ${live.target ? "on" : ""}`}
-          title={
-            !live.connected
-              ? "Desconectado do servidor"
-              : live.target
-                ? "O Claude Code (MCP) lê e edita esta aba"
-                : "Outra aba está ativa para o MCP — edite algo aqui para usar esta"
-          }
-        >
-          <span className="dot" />
-          {!live.connected ? "Offline" : live.target ? "MCP nesta aba" : "MCP em outra aba"}
+        <span className={`live-pill ${live ? "on" : ""}`} title={live ? t("editor.liveOn") : t("editor.liveOff")}>
+          <Radio size={12} />
+          {live ? t("editor.live") : t("editor.offline")}
         </span>
-        <button className="icon-btn" title="Atalhos (?)" onClick={() => setShortcutsOpen(true)}>
+        <button className="icon-btn" title={t("editor.shortcuts")} onClick={() => setShortcutsOpen(true)}>
           <Keyboard size={16} />
         </button>
         <button
           className="icon-btn"
-          title={theme === "dark" ? "Tema claro" : "Tema escuro"}
+          title={theme === "dark" ? t("editor.lightTheme") : t("editor.darkTheme")}
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
         >
           {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
         </button>
-        <button className="icon-btn" title="Configurações" onClick={() => openSettings(true)}>
+        <button className="icon-btn" title={t("settings.title")} onClick={() => openSettings(true)}>
           <Settings size={16} />
         </button>
         <MenuButton
           className="btn primary"
           align="right"
           items={[
-            { label: `PNG 1x ${hasSelection ? "(seleção)" : "(tudo)"}`, icon: <ImageDown size={14} />, onSelect: () => exportPng(1) },
-            { label: `PNG 2x ${hasSelection ? "(seleção)" : "(tudo)"}`, icon: <ImageDown size={14} />, onSelect: () => exportPng(2) },
-            { label: `SVG ${hasSelection ? "(seleção)" : "(tudo)"}`, icon: <ImageDown size={14} />, onSelect: exportSvg },
+            { label: `PNG 1x (${scope})`, icon: <ImageDown size={14} />, onSelect: () => exportPng(1) },
+            { label: `PNG 2x (${scope})`, icon: <ImageDown size={14} />, onSelect: () => exportPng(2) },
+            { label: `SVG (${scope})`, icon: <ImageDown size={14} />, onSelect: exportSvg },
+            { label: `${t("export.figma")} (${scope})`, icon: <Shapes size={14} />, onSelect: exportFigma },
             { separator: true },
-            { label: "Documento JSON", icon: <FileJson size={14} />, onSelect: saveJson },
+            { label: t("export.json"), icon: <FileJson size={14} />, onSelect: saveJson },
           ]}
         >
-          <Share2 size={14} /> Exportar
+          <Share2 size={14} /> {t("export.button")}
         </MenuButton>
       </div>
     </header>
   );
 }
 
-function saveJson() {
-  const { docName, nodes } = useEditor.getState();
-  download(new Blob([JSON.stringify({ name: docName, nodes }, null, 2)], { type: "application/json" }), `${docName || "design"}.json`);
+function SaveStatus({ status }: { status: string }) {
+  const t = useT();
+  if (status === "saving" || status === "dirty")
+    return (
+      <span className="save-status">
+        <LoaderCircle size={13} className="spin" /> {t("sync.saving")}
+      </span>
+    );
+  if (status === "error")
+    return (
+      <span className="save-status err">
+        <CloudOff size={13} /> {t("sync.notSaved")}
+      </span>
+    );
+  return (
+    <span className="save-status">
+      <Cloud size={13} /> {t("sync.saved")}
+    </span>
+  );
 }
 
-function openJson() {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = "application/json";
-  input.onchange = async () => {
-    const file = input.files?.[0];
-    if (!file) return;
-    try {
-      const doc = JSON.parse(await file.text());
-      if (!Array.isArray(doc.nodes)) throw new Error("missing nodes");
-      useEditor.getState().replaceNodes(doc.nodes);
-      if (doc.name) useEditor.getState().setDocName(doc.name);
-      useUi.getState().showToast("Documento aberto");
-    } catch {
-      useUi.getState().showToast("Arquivo inválido");
-    }
-  };
-  input.click();
+function saveJson() {
+  const { docName, nodes } = useEditor.getState();
+  download(
+    new Blob([JSON.stringify({ format: "ars", version: 1, name: docName, nodes }, null, 2)], { type: "application/json" }),
+    `${docName || "design"}.ars.json`,
+  );
 }

@@ -1,8 +1,12 @@
-import { useEffect, useRef, useState } from "react";
-import { uid, type DesignNode } from "../../shared/types.ts";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ancestors, byId, cloneSubtrees, effective, topLevel, withDescendants } from "../../shared/tree.ts";
+import type { DesignNode } from "../../shared/types.ts";
+import { importImages } from "../actions.ts";
+import { useAssetUrl } from "../assets.ts";
 import { shadowFilter } from "../export.ts";
-import { boundsOf, guidesFor, intersects, snapOffset, snapTargets, type Box, type Guide } from "../geometry.ts";
+import { boundsOf, contains, guidesFor, intersects, parentFrame, snapOffset, snapTargets, type Box, type Guide } from "../geometry.ts";
 import { useEditor, type Viewport } from "../store.ts";
+import { useT } from "../i18n/index.ts";
 import { useUi } from "../ui.ts";
 
 type Point = { x: number; y: number };
@@ -20,6 +24,7 @@ const HANDLES: Handle[] = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
 const SNAP_PX = 6;
 
 export function Canvas() {
+  const t = useT();
   const svgRef = useRef<SVGSVGElement>(null);
   const drag = useRef<Drag | null>(null);
   const [marquee, setMarquee] = useState<{ a: Point; b: Point } | null>(null);
@@ -28,6 +33,7 @@ export function Canvas() {
   const [panning, setPanning] = useState(false);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [dropping, setDropping] = useState(false);
 
   const nodes = useEditor((s) => s.nodes);
   const selection = useEditor((s) => s.selection);
@@ -90,9 +96,12 @@ export function Canvas() {
     return () => svg.removeEventListener("wheel", onWheel);
   }, []);
 
-  /** Snap targets: every visible node not being dragged. */
-  const othersFor = (exclude: Set<string>): Box[] =>
-    useEditor.getState().nodes.filter((n) => n.visible && !exclude.has(n.id));
+  /** Snap targets: every visible node not being dragged (nor inside what is). */
+  const othersFor = (exclude: Set<string>): Box[] => {
+    const { nodes } = useEditor.getState();
+    const skip = withDescendants(nodes, exclude);
+    return nodes.filter((n) => n.visible && n.type !== "group" && !skip.has(n.id));
+  };
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (editingId) setEditingId(null);
@@ -128,14 +137,15 @@ export function Canvas() {
       return;
     }
 
-    const hit = hitNode(e.target, state.nodes);
-    if (hit && !hit.locked) {
+    const hit = pick(state.nodes, hitNode(e.target, state.nodes), state.selection);
+    if (hit && !effective(byId(state.nodes), hit).locked) {
       let sel = state.selection;
       if (e.shiftKey) sel = sel.includes(hit.id) ? sel.filter((s) => s !== hit.id) : [...sel, hit.id];
       else if (!sel.includes(hit.id)) sel = [hit.id];
       state.select(sel);
+      // Content follows its frame or group, so only the outermost selected nodes are dragged.
       const originals = new Map(
-        state.nodes.filter((n) => sel.includes(n.id) && !n.locked).map((n) => [n.id, { x: n.x, y: n.y }]),
+        topLevel(state.nodes, sel).filter((n) => !n.locked).map((n) => [n.id, { x: n.x, y: n.y }]),
       );
       drag.current = { kind: "move", start: p, originals, moved: false, duplicate: e.altKey };
     } else {
@@ -148,7 +158,8 @@ export function Canvas() {
   const onPointerMove = (e: React.PointerEvent) => {
     const d = drag.current;
     if (!d) {
-      if (useEditor.getState().tool === "select") setHoverId(hitNode(e.target, useEditor.getState().nodes)?.id ?? null);
+      const { tool, nodes, selection } = useEditor.getState();
+      if (tool === "select") setHoverId(pick(nodes, hitNode(e.target, nodes), selection)?.id ?? null);
       return;
     }
     const state = useEditor.getState();
@@ -225,7 +236,20 @@ export function Canvas() {
     } else if (d.kind === "marquee") {
       setMarquee({ a: d.start, b: p });
       const box = normRect(d.start, p);
-      const hits = state.nodes.filter((n) => n.visible && !n.locked && intersects(box, n)).map((n) => n.id);
+      const index = byId(state.nodes);
+      // Frames are picked only when fully enclosed (and then stand for their content);
+      // touching any part of a group picks the group.
+      const frames = new Set(state.nodes.filter((n) => n.type === "frame" && contains(box, n)).map((n) => n.id));
+      const hits = state.nodes
+        .filter((n) => n.type !== "group" && n.type !== "frame" && intersects(box, n))
+        .map((n) => pick(state.nodes, n, [])!)
+        .concat(state.nodes.filter((n) => frames.has(n.id)))
+        .filter((n) => !ancestors(index, n).some((a) => frames.has(a.id)))
+        .filter((n) => {
+          const e = effective(index, n);
+          return e.visible && !e.locked;
+        })
+        .map((n) => n.id);
       state.select([...new Set([...d.additive, ...hits])]);
     }
   };
@@ -236,6 +260,7 @@ export function Canvas() {
     setMarquee(null);
     setGuides([]);
     setPanning(false);
+    if (d?.kind === "move" && d.moved) adoptIntoFrames([...d.originals.keys()]);
     if (d?.kind === "create") {
       const state = useEditor.getState();
       const node = state.nodes.find((n) => n.id === d.id);
@@ -249,19 +274,27 @@ export function Canvas() {
   };
 
   const onDoubleClick = (e: React.MouseEvent) => {
-    const node = hitNode(e.target, useEditor.getState().nodes);
-    if (node?.type === "text" && !node.locked) setEditingId(node.id);
+    const state = useEditor.getState();
+    const hit = hitNode(e.target, state.nodes);
+    if (!hit) return;
+    // Double-click enters a group one level at a time, then edits text.
+    const chain = groupChain(state.nodes, hit);
+    const at = chain.findIndex((n) => state.selection.includes(n.id));
+    const next = at >= 0 && at < chain.length - 1 ? chain[at + 1] : hit;
+    if (next.id !== hit.id || !state.selection.includes(hit.id)) return state.select([next.id]);
+    if (hit.type === "text" && !effective(byId(state.nodes), hit).locked) setEditingId(hit.id);
   };
 
   const onContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     const state = useEditor.getState();
-    const hit = hitNode(e.target, state.nodes);
+    const hit = pick(state.nodes, hitNode(e.target, state.nodes), state.selection);
     if (hit && !state.selection.includes(hit.id)) state.select([hit.id]);
     if (!hit) state.select([]);
     useUi.getState().setContextMenu({ x: e.clientX, y: e.clientY });
   };
 
+  const index = useMemo(() => byId(nodes), [nodes]);
   const selectedNodes = nodes.filter((n) => selection.includes(n.id));
   const selBounds = boundsOf(selectedNodes);
   const hovered = hoverId && !selection.includes(hoverId) ? nodes.find((n) => n.id === hoverId) : undefined;
@@ -271,7 +304,24 @@ export function Canvas() {
     spaceDown || tool === "hand" ? (panning ? "grabbing" : "grab") : tool === "select" ? "default" : "crosshair";
 
   return (
-    <div className="canvas-wrap">
+    <div
+      className={`canvas-wrap ${dropping ? "dropping" : ""}`}
+      onDragOver={(e) => {
+        if (!e.dataTransfer.types.includes("Files")) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+        setDropping(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropping(false);
+      }}
+      onDrop={(e) => {
+        if (!e.dataTransfer.files.length) return;
+        e.preventDefault();
+        setDropping(false);
+        void importImages([...e.dataTransfer.files], toWorld(e.clientX, e.clientY));
+      }}
+    >
       <svg
         ref={svgRef}
         className="canvas"
@@ -282,15 +332,21 @@ export function Canvas() {
         onPointerLeave={() => setHoverId(null)}
         onDoubleClick={onDoubleClick}
         onContextMenu={onContextMenu}
+        // Images on the canvas would otherwise start a native drag.
+        onDragStart={(e) => e.preventDefault()}
       >
-        <DotGrid viewport={viewport} />
+        <GridLines viewport={viewport} />
         <defs
           dangerouslySetInnerHTML={{
             __html: nodes.filter((n) => n.shadow).map((n) => shadowFilter(`shadow-${n.id}`, n.shadow!)).join(""),
           }}
         />
         <g transform={`translate(${viewport.x} ${viewport.y}) scale(${z})`}>
-          {nodes.map((n) => n.visible && <NodeView key={n.id} node={n} zoom={z} hideText={n.id === editingId} />)}
+          {nodes.map((n) => {
+            if (n.type === "group") return null;
+            const { visible, opacity } = effective(index, n);
+            return visible && <NodeView key={n.id} node={n} opacity={opacity} zoom={z} hideText={n.id === editingId} />;
+          })}
 
           {hovered && (
             <rect
@@ -328,7 +384,7 @@ export function Canvas() {
             ),
           )}
 
-          {selectedNodes.length === 1 && !selectedNodes[0].locked && (
+          {selectedNodes.length === 1 && !effective(index, selectedNodes[0]).locked && (
             <g transform={rotation(selectedNodes[0])}>
               {HANDLES.map((h) => {
                 const { x, y } = handlePos(selectedNodes[0], h);
@@ -343,7 +399,7 @@ export function Canvas() {
                     y={y - s / 2}
                     width={s}
                     height={s}
-                    rx={1.5 / z}
+                    rx={s / 2}
                     strokeWidth={1 / z}
                   />
                 );
@@ -357,15 +413,16 @@ export function Canvas() {
         </g>
       </svg>
 
+      {dropping && <div className="drop-hint">{t("canvas.dropHint")}</div>}
       {editing && <TextEditor node={editing} viewport={viewport} onDone={() => setEditingId(null)} />}
 
       {nodes.length === 0 && (
         <div className="canvas-empty">
           <div className="canvas-empty-card">
-            <strong>Canvas vazio</strong>
-            <span>Desenhe com a barra de ferramentas abaixo, ou peça ao Claude para criar algo.</span>
+            <strong>{t("canvas.emptyTitle")}</strong>
+            <span>{t("canvas.emptyText")}</span>
             <button className="btn primary" onClick={() => useUi.getState().askClaude()}>
-              Perguntar ao Claude
+              {t("menu.ask")}
             </button>
           </div>
         </div>
@@ -376,12 +433,38 @@ export function Canvas() {
 
 function duplicateInPlace(d: Extract<Drag, { kind: "move" }>) {
   const state = useEditor.getState();
-  const copies = state.nodes
-    .filter((n) => d.originals.has(n.id))
-    .map((n) => ({ ...n, id: uid(), name: `${n.name} copy` }));
+  const { copies, roots } = cloneSubtrees(state.nodes, d.originals.keys(), 0, 0, " copy");
   // Leave the originals where they were and drag the copies instead.
-  state.setNodes([...state.nodes, ...copies], copies.map((c) => c.id));
-  d.originals = new Map(copies.map((c) => [c.id, { x: c.x, y: c.y }]));
+  state.setNodes([...state.nodes, ...copies], roots);
+  const index = byId(useEditor.getState().nodes);
+  d.originals = new Map(roots.map((id) => [id, { x: index.get(id)!.x, y: index.get(id)!.y }]));
+}
+
+/** After a drag, loose layers (and layers of a frame) belong to the frame they were dropped on. */
+function adoptIntoFrames(ids: string[]) {
+  const state = useEditor.getState();
+  const index = byId(state.nodes);
+  const patches = new Map<string, string | undefined>();
+  for (const id of ids) {
+    const n = index.get(id);
+    if (!n || n.type === "frame" || (n.parentId && index.get(n.parentId)?.type === "group")) continue;
+    const inside = withDescendants(state.nodes, [id]);
+    const frame = parentFrame(
+      state.nodes.filter((o) => !inside.has(o.id) || o.id === id),
+      n,
+      true,
+    );
+    if (frame?.id !== n.parentId) patches.set(id, frame?.id);
+  }
+  if (!patches.size) return;
+  state.setNodes(
+    state.nodes.map((n) => {
+      if (!patches.has(n.id)) return n;
+      const { parentId: _, ...rest } = n;
+      const parentId = patches.get(n.id);
+      return (parentId ? { ...rest, parentId } : rest) as DesignNode;
+    }),
+  );
 }
 
 function hitNode(target: EventTarget, nodes: DesignNode[]) {
@@ -389,27 +472,50 @@ function hitNode(target: EventTarget, nodes: DesignNode[]) {
   return id ? nodes.find((n) => n.id === id) : undefined;
 }
 
-/** Dot grid that follows pan/zoom and thins out as you zoom out. */
-function DotGrid({ viewport }: { viewport: Viewport }) {
-  let step = 24 * viewport.zoom;
-  while (step < 16) step *= 2;
-  while (step > 64) step /= 2;
-  const r = clamp(viewport.zoom, 0.6, 1.2);
+/** The groups around `node`, outermost first, followed by `node` itself. Frames are not crossed. */
+function groupChain(nodes: DesignNode[], node: DesignNode): DesignNode[] {
+  const chain: DesignNode[] = [node];
+  for (const a of ancestors(byId(nodes), node)) {
+    if (a.type !== "group") break;
+    chain.unshift(a);
+  }
+  return chain;
+}
+
+/**
+ * What a click on `hit` selects, like Figma: the outermost group around it, unless
+ * the selection is already inside that group, in which case it stays at that level.
+ */
+function pick(nodes: DesignNode[], hit: DesignNode | undefined, selection: string[]) {
+  if (!hit) return undefined;
+  const chain = groupChain(nodes, hit);
+  if (chain.length === 1) return hit;
+  const index = byId(nodes);
+  for (let i = chain.length - 1; i > 0; i--) {
+    const parent = chain[i].parentId;
+    if (selection.some((id) => id === chain[i].id || index.get(id)?.parentId === parent)) return chain[i];
+  }
+  return chain[0];
+}
+
+/** Graph-paper grid that follows pan/zoom: a fine grid with every fourth line stronger. */
+function GridLines({ viewport }: { viewport: Viewport }) {
+  let step = 16 * viewport.zoom;
+  while (step < 12) step *= 4;
+  while (step > 48) step /= 4;
+  const major = step * 4;
   return (
     <>
       <defs>
-        <pattern
-          id="dot-grid"
-          width={step}
-          height={step}
-          patternUnits="userSpaceOnUse"
-          x={mod(viewport.x, step)}
-          y={mod(viewport.y, step)}
-        >
-          <circle cx={r} cy={r} r={r} className="grid-dot" />
+        <pattern id="grid-minor" width={step} height={step} patternUnits="userSpaceOnUse" x={mod(viewport.x, step)} y={mod(viewport.y, step)}>
+          <path d={`M ${step} 0 L 0 0 0 ${step}`} fill="none" className="grid-line" />
+        </pattern>
+        <pattern id="grid-major" width={major} height={major} patternUnits="userSpaceOnUse" x={mod(viewport.x, major)} y={mod(viewport.y, major)}>
+          <rect width={major} height={major} fill="url(#grid-minor)" />
+          <path d={`M ${major} 0 L 0 0 0 ${major}`} fill="none" className="grid-line major" />
         </pattern>
       </defs>
-      <rect width="100%" height="100%" fill="url(#dot-grid)" />
+      <rect width="100%" height="100%" fill="url(#grid-major)" />
     </>
   );
 }
@@ -431,7 +537,8 @@ function SizeLabel({ box, zoom }: { box: Box; zoom: number }) {
   );
 }
 
-function NodeView({ node: n, zoom, hideText }: { node: DesignNode; zoom: number; hideText: boolean }) {
+function NodeView({ node: n, opacity, zoom, hideText }: { node: DesignNode; opacity: number; zoom: number; hideText: boolean }) {
+  const imageUrl = useAssetUrl(n.type === "image" ? n.src : undefined);
   const shape = {
     "data-id": n.id,
     fill: n.fill,
@@ -444,6 +551,38 @@ function NodeView({ node: n, zoom, hideText }: { node: DesignNode; zoom: number;
     case "frame":
     case "rect":
       body = <rect {...shape} x={n.x} y={n.y} width={n.width} height={n.height} rx={n.cornerRadius} />;
+      break;
+    case "image":
+      body = (
+        <>
+          <clipPath id={`clip-${n.id}`}>
+            <rect x={n.x} y={n.y} width={n.width} height={n.height} rx={n.cornerRadius} />
+          </clipPath>
+          <image
+            data-id={n.id}
+            href={imageUrl}
+            x={n.x}
+            y={n.y}
+            width={n.width}
+            height={n.height}
+            preserveAspectRatio="xMidYMid slice"
+            clipPath={`url(#clip-${n.id})`}
+          />
+          {n.strokeWidth > 0 && (
+            <rect
+              x={n.x}
+              y={n.y}
+              width={n.width}
+              height={n.height}
+              rx={n.cornerRadius}
+              fill="none"
+              stroke={n.stroke}
+              strokeWidth={n.strokeWidth}
+              pointerEvents="none"
+            />
+          )}
+        </>
+      );
       break;
     case "ellipse":
       body = <ellipse {...shape} cx={n.x + n.width / 2} cy={n.y + n.height / 2} rx={n.width / 2} ry={n.height / 2} />;
@@ -460,12 +599,12 @@ function NodeView({ node: n, zoom, hideText }: { node: DesignNode; zoom: number;
 
   return (
     <>
-      {n.type === "frame" && (
+      {n.type === "frame" && !n.parentId && (
         <text data-id={n.id} x={n.x} y={n.y - 6 / zoom} fontSize={11 / zoom} className="frame-label" transform={rotation(n)}>
           {n.name}
         </text>
       )}
-      <g opacity={n.opacity} transform={rotation(n)} filter={n.shadow ? `url(#shadow-${n.id})` : undefined}>
+      <g opacity={opacity} transform={rotation(n)} filter={n.shadow ? `url(#shadow-${n.id})` : undefined}>
         {body}
       </g>
     </>
@@ -576,7 +715,7 @@ function mod(a: number, n: number) {
   return ((a % n) + n) % n;
 }
 
-export function isTyping(e: KeyboardEvent) {
+export function isTyping(e: Event) {
   const t = e.target as HTMLElement;
   return t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable;
 }

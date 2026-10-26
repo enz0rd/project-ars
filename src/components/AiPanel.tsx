@@ -1,6 +1,8 @@
 import { ArrowUp, KeyRound, Layers, Plug, Sparkles, Square, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { AiChatTurn, AiEvent, AiRequest } from "../../shared/types.ts";
+import { errorMessage, tc, useT, type Key } from "../i18n/index.ts";
+import { apiFetch } from "../lib/api.ts";
 import { useSettings } from "../settings.ts";
 import { useEditor } from "../store.ts";
 import { useUi } from "../ui.ts";
@@ -11,14 +13,15 @@ interface ChatMessage extends AiChatTurn {
   mcpCalls?: string[];
 }
 
-const SUGGESTIONS = [
-  { title: "Tela de login", prompt: "Crie uma tela de login mobile moderna" },
-  { title: "Tabela de preços", prompt: "Monte uma seção de preços com 3 planos, destaque no plano do meio" },
-  { title: "Dashboard", prompt: "Desenhe um dashboard com sidebar, 4 cards de métricas e um gráfico" },
-  { title: "Refinar seleção", prompt: "Deixe a seleção mais moderna: cantos arredondados, sombra suave e melhor espaçamento" },
+const SUGGESTIONS: [Key, Key][] = [
+  ["ai.s1.title", "ai.s1.prompt"],
+  ["ai.s2.title", "ai.s2.prompt"],
+  ["ai.s3.title", "ai.s3.prompt"],
+  ["ai.s4.title", "ai.s4.prompt"],
 ];
 
 export function AiPanel() {
+  const t = useT();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -29,7 +32,9 @@ export function AiPanel() {
   const openSettings = useSettings((s) => s.setOpen);
   const selectionCount = useEditor((s) => s.selection.length);
   const focusComposer = useUi((s) => s.focusComposer);
-  const missingKey = settings !== null && !settings.apiKey.configured;
+  const ai = settings?.ai;
+  const missingKey = !!ai && !(ai.provider === "anthropic" ? ai.anthropic.configured : ai.openai.configured);
+  const providerName = ai?.provider === "openai" ? (ai.openai.model ?? "OpenAI") : "Claude";
   const activeMcp = settings?.mcpServers.filter((m) => m.enabled).length ?? 0;
 
   useEffect(() => {
@@ -52,7 +57,9 @@ export function AiPanel() {
     prompt = prompt.trim();
     if (!prompt || busy) return;
     const state = useEditor.getState();
+    if (!state.projectId) return;
     const body: AiRequest = {
+      projectId: state.projectId,
       prompt,
       document: { name: state.docName, nodes: state.nodes },
       selection: state.selection,
@@ -65,19 +72,17 @@ export function AiPanel() {
     const patchLast = (fn: (m: ChatMessage) => ChatMessage) =>
       setMessages((all) => [...all.slice(0, -1), fn(all[all.length - 1])]);
 
-    // One undo step for everything Claude does in this turn.
+    // One undo step for everything the assistant does in this turn.
     state.checkpoint();
     const abort = new AbortController();
     abortRef.current = abort;
 
     try {
-      const res = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-        signal: abort.signal,
-      });
-      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+      const res = await apiFetch("POST", "/api/ai", body, abort.signal);
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? `http_${res.status}`);
+      }
 
       for await (const event of readSse(res.body)) {
         if (event.type === "text") patchLast((m) => ({ ...m, text: m.text + event.text }));
@@ -86,11 +91,11 @@ export function AiPanel() {
           patchLast((m) => ({ ...m, edits: (m.edits ?? 0) + 1 }));
         } else if (event.type === "mcp") {
           patchLast((m) => ({ ...m, mcpCalls: [...(m.mcpCalls ?? []), `${event.server} › ${event.tool}`] }));
-        } else if (event.type === "error") patchLast((m) => ({ ...m, text: event.message, error: true }));
+        } else if (event.type === "error") patchLast((m) => ({ ...m, text: errorMessage(event.message), error: true }));
       }
     } catch (err) {
       if (!abort.signal.aborted) {
-        patchLast((m) => ({ ...m, text: `Falha ao falar com o servidor: ${(err as Error).message}`, error: true }));
+        patchLast((m) => ({ ...m, text: errorMessage((err as Error).message), error: true }));
       }
     } finally {
       setBusy(false);
@@ -105,15 +110,16 @@ export function AiPanel() {
           <span className="ai-avatar">
             <Sparkles size={13} />
           </span>
-          Claude
-          {activeMcp > 0 && (
-            <span className="chip" title="Servidores MCP ativos">
+          {t("inspector.assistant")}
+          {ai && <span className="chip">{providerName}</span>}
+          {activeMcp > 0 && ai?.provider === "anthropic" && (
+            <span className="chip" title={t("ai.activeMcp")}>
               <Plug size={11} /> {activeMcp}
             </span>
           )}
         </div>
         {messages.length > 0 && (
-          <button className="icon-btn sm" title="Limpar conversa" onClick={() => setMessages([])} disabled={busy}>
+          <button className="icon-btn sm" title={t("ai.clear")} onClick={() => setMessages([])} disabled={busy}>
             <Trash2 size={14} />
           </button>
         )}
@@ -124,11 +130,11 @@ export function AiPanel() {
           <div className="setup-banner">
             <KeyRound size={16} />
             <div>
-              <strong>Configure sua chave da API</strong>
-              <span>O Claude precisa de uma chave para editar o canvas.</span>
+              <strong>{t("ai.setupTitle")}</strong>
+              <span>{t("ai.setupText")}</span>
             </div>
-            <button className="btn primary sm" onClick={() => openSettings(true)}>
-              Configurar
+            <button className="btn primary sm" onClick={() => openSettings(true, "ai")}>
+              {t("ai.setupButton")}
             </button>
           </div>
         )}
@@ -137,13 +143,13 @@ export function AiPanel() {
             <div className="welcome-icon">
               <Sparkles size={20} />
             </div>
-            <h3>O que vamos desenhar?</h3>
-            <p>Descreva uma tela ou peça mudanças na seleção. O Claude edita o canvas ao vivo e tudo vira um único Ctrl+Z.</p>
+            <h3>{t("ai.welcomeTitle")}</h3>
+            <p>{t("ai.welcomeText")}</p>
             <div className="suggestions">
-              {SUGGESTIONS.map((s) => (
-                <button key={s.title} className="suggestion" onClick={() => send(s.prompt)} disabled={busy || missingKey}>
-                  <strong>{s.title}</strong>
-                  <span>{s.prompt}</span>
+              {SUGGESTIONS.map(([title, prompt]) => (
+                <button key={title} className="suggestion" onClick={() => send(t(prompt))} disabled={busy || missingKey}>
+                  <strong>{t(title)}</strong>
+                  <span>{t(prompt)}</span>
                 </button>
               ))}
             </div>
@@ -170,7 +176,7 @@ export function AiPanel() {
               ) : null)}
             {!!m.edits && (
               <div className="edits">
-                <Layers size={11} /> {m.edits} alteraç{m.edits === 1 ? "ão" : "ões"} no canvas
+                <Layers size={11} /> {tc("ai.edits", m.edits)}
               </div>
             )}
           </div>
@@ -186,14 +192,14 @@ export function AiPanel() {
       >
         {selectionCount > 0 && (
           <div className="context-chip">
-            <Layers size={11} /> {selectionCount} camada{selectionCount > 1 ? "s" : ""} selecionada{selectionCount > 1 ? "s" : ""}
+            <Layers size={11} /> {tc("ai.selected", selectionCount)}
           </div>
         )}
         <div className="composer-box">
           <textarea
             ref={inputRef}
             value={input}
-            placeholder={selectionCount ? "O que mudar na seleção?" : "Descreva o que desenhar…"}
+            placeholder={selectionCount ? t("ai.placeholderSelection") : t("ai.placeholder")}
             rows={1}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -205,11 +211,11 @@ export function AiPanel() {
             }}
           />
           {busy ? (
-            <button type="button" className="send stop" title="Parar" onClick={() => abortRef.current?.abort()}>
+            <button type="button" className="send stop" title={t("ai.stop")} onClick={() => abortRef.current?.abort()}>
               <Square size={12} fill="currentColor" />
             </button>
           ) : (
-            <button type="submit" className="send" title="Enviar (Enter)" disabled={!input.trim()}>
+            <button type="submit" className="send" title={`${t("ai.send")} (Enter)`} disabled={!input.trim()}>
               <ArrowUp size={16} />
             </button>
           )}

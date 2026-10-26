@@ -11,6 +11,7 @@ import {
   AlignStartVertical,
   AlignVerticalDistributeCenter,
   ImageDown,
+  ImageUp,
   Minus,
   Plus,
   RotateCw,
@@ -19,13 +20,16 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { DesignNode, Shadow } from "../../shared/types.ts";
-import { align, distribute, exportPng, exportSvg } from "../actions.ts";
+import { align, distribute, exportPng, exportSvg, pickImages } from "../actions.ts";
+import { useAssetUrl } from "../assets.ts";
+import { tc, useT, type Key } from "../i18n/index.ts";
 import { useEditor } from "../store.ts";
 import { useUi } from "../ui.ts";
 
 const DEFAULT_SHADOW: Shadow = { x: 0, y: 4, blur: 16, color: "#0000001F" };
 
 export function PropertiesPanel() {
+  const t = useT();
   const nodes = useEditor((s) => s.nodes);
   const selection = useEditor((s) => s.selection);
   const selected = nodes.filter((n) => selection.includes(n.id));
@@ -36,31 +40,34 @@ export function PropertiesPanel() {
   const n = selected[0];
   const ids = selected.map((s) => s.id);
   const isText = selected.every((s) => s.type === "text");
-  const hasRadius = selected.every((s) => s.type === "rect" || s.type === "frame");
+  // A group has no look of its own: only its box, opacity and export apply.
+  const isGroup = selected.every((s) => s.type === "group");
+  const isImage = selected.every((s) => s.type === "image");
+  const hasRadius = selected.every((s) => s.type === "rect" || s.type === "frame" || s.type === "image");
 
   return (
     <div className="props">
       <div className="props-title">
-        <span>{selected.length > 1 ? `${selected.length} camadas` : n.name}</span>
-        <span className="type-chip">{selected.length > 1 ? "Misto" : TYPE_LABEL[n.type]}</span>
+        <span>{selected.length > 1 ? tc("props.layers", selected.length) : n.name}</span>
+        <span className="type-chip">{selected.length > 1 ? t("props.mixed") : t(TYPE_LABEL[n.type])}</span>
       </div>
 
       <Section>
         <div className="align-bar">
-          <IconAction title="Alinhar à esquerda (Alt+A)" onClick={() => align("left")} icon={<AlignStartVertical size={15} />} />
-          <IconAction title="Centralizar horizontalmente (Alt+H)" onClick={() => align("hcenter")} icon={<AlignCenterVertical size={15} />} />
-          <IconAction title="Alinhar à direita (Alt+D)" onClick={() => align("right")} icon={<AlignEndVertical size={15} />} />
-          <IconAction title="Alinhar ao topo (Alt+W)" onClick={() => align("top")} icon={<AlignStartHorizontal size={15} />} />
-          <IconAction title="Centralizar verticalmente (Alt+V)" onClick={() => align("vcenter")} icon={<AlignCenterHorizontal size={15} />} />
-          <IconAction title="Alinhar à base (Alt+S)" onClick={() => align("bottom")} icon={<AlignEndHorizontal size={15} />} />
+          <IconAction title={`${t("align.left")} (Alt+A)`} onClick={() => align("left")} icon={<AlignStartVertical size={15} />} />
+          <IconAction title={`${t("align.hcenter")} (Alt+H)`} onClick={() => align("hcenter")} icon={<AlignCenterVertical size={15} />} />
+          <IconAction title={`${t("align.right")} (Alt+D)`} onClick={() => align("right")} icon={<AlignEndVertical size={15} />} />
+          <IconAction title={`${t("align.top")} (Alt+W)`} onClick={() => align("top")} icon={<AlignStartHorizontal size={15} />} />
+          <IconAction title={`${t("align.vcenter")} (Alt+V)`} onClick={() => align("vcenter")} icon={<AlignCenterHorizontal size={15} />} />
+          <IconAction title={`${t("align.bottom")} (Alt+S)`} onClick={() => align("bottom")} icon={<AlignEndHorizontal size={15} />} />
           <IconAction
-            title="Distribuir horizontalmente"
+            title={t("align.distributeH")}
             disabled={selected.length < 3}
             onClick={() => distribute("h")}
             icon={<AlignHorizontalDistributeCenter size={15} />}
           />
           <IconAction
-            title="Distribuir verticalmente"
+            title={t("align.distributeV")}
             disabled={selected.length < 3}
             onClick={() => distribute("v")}
             icon={<AlignVerticalDistributeCenter size={15} />}
@@ -68,32 +75,43 @@ export function PropertiesPanel() {
         </div>
       </Section>
 
-      <Section title="Layout">
+      <Section title={t("props.layout")}>
         <div className="grid2">
           <NumField label="X" value={n.x} ids={ids} prop="x" />
           <NumField label="Y" value={n.y} ids={ids} prop="y" />
           <NumField label="W" value={n.width} ids={ids} prop="width" min={0} />
           <NumField label="H" value={n.height} ids={ids} prop="height" min={0} />
-          <NumField label={<RotateCw size={12} />} value={n.rotation} ids={ids} prop="rotation" suffix="°" />
+          {!isGroup && <NumField label={<RotateCw size={12} />} value={n.rotation} ids={ids} prop="rotation" suffix="°" />}
           {hasRadius && (
             <NumField label={<SquareRoundCorner size={12} />} value={n.cornerRadius} ids={ids} prop="cornerRadius" min={0} />
           )}
         </div>
       </Section>
 
-      <Section title="Camada">
+      <Section title={t("props.layer")}>
         <OpacityField value={n.opacity} ids={ids} />
       </Section>
 
-      <Section title={isText ? "Cor do texto" : "Preenchimento"}>
-        <ColorField value={n.fill} ids={ids} prop="fill" />
-      </Section>
+      {!isGroup && !isImage && (
+        <Section title={isText ? t("props.textColor") : t("props.fill")}>
+          <ColorField value={n.fill} ids={ids} prop="fill" />
+        </Section>
+      )}
+
+      {isImage && selected.length === 1 && (
+        <Section title={t("type.image")}>
+          <ImagePreview src={n.src} />
+          <button className="btn subtle" onClick={() => pickImages(n.id)}>
+            <ImageUp size={14} /> {t("props.replaceImage")}
+          </button>
+        </Section>
+      )}
 
       {isText && (
-        <Section title="Tipografia">
+        <Section title={t("props.typography")}>
           <TextField value={n.fontFamily ?? "Inter"} ids={ids} />
           <div className="grid2">
-            <NumField label="Tam" value={n.fontSize ?? 16} ids={ids} prop="fontSize" min={1} />
+            <NumField label={t("props.size")} value={n.fontSize ?? 16} ids={ids} prop="fontSize" min={1} />
             <WeightField value={n.fontWeight ?? 400} ids={ids} />
           </div>
           <div className="segmented">
@@ -112,14 +130,14 @@ export function PropertiesPanel() {
         </Section>
       )}
 
-      {!isText && (
+      {!isText && !isGroup && (
         <Section
-          title="Borda"
+          title={t("props.stroke")}
           action={
             n.strokeWidth > 0 ? (
-              <IconAction title="Remover borda" onClick={() => commit(ids, { strokeWidth: 0 })} icon={<Minus size={14} />} />
+              <IconAction title={t("props.removeStroke")} onClick={() => commit(ids, { strokeWidth: 0 })} icon={<Minus size={14} />} />
             ) : (
-              <IconAction title="Adicionar borda" onClick={() => commit(ids, { strokeWidth: 1 })} icon={<Plus size={14} />} />
+              <IconAction title={t("props.addStroke")} onClick={() => commit(ids, { strokeWidth: 1 })} icon={<Plus size={14} />} />
             )
           }
         >
@@ -134,20 +152,22 @@ export function PropertiesPanel() {
         </Section>
       )}
 
-      <Section
-        title="Sombra"
-        action={
-          n.shadow ? (
-            <IconAction title="Remover sombra" onClick={() => commit(ids, { shadow: null })} icon={<Minus size={14} />} />
-          ) : (
-            <IconAction title="Adicionar sombra" onClick={() => commit(ids, { shadow: DEFAULT_SHADOW })} icon={<Plus size={14} />} />
-          )
-        }
-      >
-        {n.shadow && <ShadowFields shadow={n.shadow} ids={ids} />}
-      </Section>
+      {!isGroup && (
+        <Section
+          title={t("props.shadow")}
+          action={
+            n.shadow ? (
+              <IconAction title={t("props.removeShadow")} onClick={() => commit(ids, { shadow: null })} icon={<Minus size={14} />} />
+            ) : (
+              <IconAction title={t("props.addShadow")} onClick={() => commit(ids, { shadow: DEFAULT_SHADOW })} icon={<Plus size={14} />} />
+            )
+          }
+        >
+          {n.shadow && <ShadowFields shadow={n.shadow} ids={ids} />}
+        </Section>
+      )}
 
-      <Section title="Exportar">
+      <Section title={t("export.button")}>
         <div className="row">
           <button className="btn subtle grow" onClick={() => exportPng(2)}>
             <ImageDown size={14} /> PNG 2x
@@ -161,36 +181,49 @@ export function PropertiesPanel() {
   );
 }
 
-const TYPE_LABEL: Record<DesignNode["type"], string> = { frame: "Frame", rect: "Retângulo", ellipse: "Elipse", text: "Texto" };
+const TYPE_LABEL: Record<DesignNode["type"], Key> = {
+  frame: "type.artboard",
+  group: "type.group",
+  rect: "type.rect",
+  ellipse: "type.ellipse",
+  text: "type.text",
+  image: "type.image",
+};
+
+function ImagePreview({ src }: { src?: string }) {
+  const url = useAssetUrl(src);
+  return <div className="image-preview" style={url ? { backgroundImage: `url("${url.replace(/"/g, "%22")}")` } : undefined} />;
+}
 
 function DocumentInfo() {
+  const t = useT();
   const nodes = useEditor((s) => s.nodes);
-  const askClaude = useUi((s) => s.askClaude);
+  const askAssistant = useUi((s) => s.askClaude);
   const counts = nodes.reduce<Record<string, number>>((acc, n) => ({ ...acc, [n.type]: (acc[n.type] ?? 0) + 1 }), {});
 
   return (
     <div className="props">
       <div className="props-title">
-        <span>Documento</span>
+        <span>{t("props.document")}</span>
       </div>
-      <Section title="Resumo">
+      <Section title={t("props.summary")}>
         <div className="stats">
-          {(["frame", "rect", "ellipse", "text"] as const).map((t) => (
-            <div key={t} className="stat">
-              <strong>{counts[t] ?? 0}</strong>
-              <span>{TYPE_LABEL[t]}</span>
+          {(["frame", "group", "rect", "ellipse", "text", "image"] as const).map((type) => (
+            <div key={type} className="stat">
+              <strong>{counts[type] ?? 0}</strong>
+              <span>{t(TYPE_LABEL[type])}</span>
             </div>
           ))}
         </div>
       </Section>
-      <Section title="Dicas">
+      <Section title={t("props.tips")}>
         <ul className="tips">
-          <li>Selecione uma camada para editar suas propriedades.</li>
-          <li>Arraste com Alt para duplicar; segure Ctrl para mover sem guias.</li>
-          <li>Clique com o botão direito para mais opções.</li>
+          <li>{t("props.tip1")}</li>
+          <li>{t("props.tip2")}</li>
+          <li>{t("props.tip3")}</li>
         </ul>
-        <button className="btn ai grow" onClick={askClaude}>
-          <Sparkles size={14} /> Pedir um layout ao Claude
+        <button className="btn ai grow" onClick={askAssistant}>
+          <Sparkles size={14} /> {t("props.askLayout")}
         </button>
       </Section>
     </div>
@@ -338,7 +371,7 @@ function WeightField({ value, ids }: { value: number; ids: string[] }) {
   );
 }
 
-const FONTS = ["Inter", "Roboto", "Poppins", "Montserrat", "Playfair Display", "JetBrains Mono", "system-ui", "Georgia"];
+const FONTS = ["Manrope", "Gabarito", "Inter", "Roboto", "Poppins", "Montserrat", "Playfair Display", "JetBrains Mono", "system-ui", "Georgia"];
 
 function TextField({ value, ids }: { value: string; ids: string[] }) {
   return (

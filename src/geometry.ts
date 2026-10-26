@@ -29,12 +29,16 @@ export function contains(outer: Box, inner: Box) {
   );
 }
 
-/** The topmost frame below `node` in z-order that fully contains it. */
-export function parentFrame(nodes: DesignNode[], node: DesignNode): DesignNode | undefined {
-  const index = nodes.indexOf(node);
+/**
+ * The topmost frame below `node` in z-order that contains it — fully, or with
+ * `byCenter` just its centre point.
+ */
+export function parentFrame(nodes: DesignNode[], node: DesignNode, byCenter = false): DesignNode | undefined {
+  const index = nodes.findIndex((n) => n.id === node.id);
+  const center = { x: node.x + node.width / 2, y: node.y + node.height / 2, width: 0, height: 0 };
   for (let i = index - 1; i >= 0; i--) {
     const n = nodes[i];
-    if (n.type === "frame" && n.visible && contains(n, node)) return n;
+    if (n.type === "frame" && n.id !== node.id && n.visible && contains(n, byCenter ? center : node)) return n;
   }
 }
 

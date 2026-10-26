@@ -1,41 +1,30 @@
 import { create } from "zustand";
 import type { PublicSettings } from "../shared/types.ts";
-import type { LiveStatus } from "./live.ts";
+import { api } from "./lib/api.ts";
+
+export type SettingsTab = "account" | "ai" | "agents" | "mcp";
 
 interface SettingsState {
   open: boolean;
-  /** This editor's connection to the server's live/MCP bridge. */
-  live: LiveStatus;
+  tab: SettingsTab;
   settings: PublicSettings | null;
-  setOpen: (open: boolean) => void;
+  setOpen: (open: boolean, tab?: SettingsTab) => void;
+  setTab: (tab: SettingsTab) => void;
   refresh: () => Promise<void>;
-  /** Calls a settings endpoint; responses that return PublicSettings update the store. */
-  call: <T = PublicSettings>(method: string, url: string, body?: unknown) => Promise<T>;
 }
 
 export const useSettings = create<SettingsState>((set, get) => ({
   open: false,
-  live: { connected: false, target: false },
+  tab: "account",
   settings: null,
 
-  setOpen: (open) => {
-    set({ open });
+  setOpen: (open, tab) => {
+    set({ open, ...(tab && { tab }) });
     if (open) get().refresh().catch(() => {});
   },
+  setTab: (tab) => set({ tab }),
 
   refresh: async () => {
-    set({ settings: await get().call("GET", "/api/settings") });
-  },
-
-  call: async (method, url, body) => {
-    const res = await fetch(url, {
-      method,
-      headers: body === undefined ? undefined : { "Content-Type": "application/json" },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
-    if (data && "apiKey" in data && "mcpServers" in data) set({ settings: data });
-    return data;
+    set({ settings: await api<PublicSettings>("GET", "/api/me/settings") });
   },
 }));

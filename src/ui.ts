@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export type Theme = "light" | "dark";
-export type RightTab = "design" | "claude";
+export type RightTab = "design" | "layers" | "claude";
 
 interface UiState {
   theme: Theme;
@@ -23,7 +23,7 @@ interface UiState {
   askClaude: () => void;
 }
 
-const THEME_KEY = "figma-claude:theme";
+const THEME_KEY = "ars:theme";
 
 function initialTheme(): Theme {
   try {

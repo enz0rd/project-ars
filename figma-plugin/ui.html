@@ -1,0 +1,71 @@
+<style>
+  body { margin: 0; padding: 16px; font: 12px/1.5 Inter, system-ui, sans-serif; color: var(--figma-color-text, #222); background: var(--figma-color-bg, #fff); }
+  h1 { font-size: 13px; margin: 0 0 4px; }
+  p { margin: 0 0 12px; color: var(--figma-color-text-secondary, #666); }
+  .drop {
+    display: grid; place-items: center; height: 140px; border: 1.5px dashed var(--figma-color-border-strong, #bbb);
+    border-radius: 8px; text-align: center; cursor: pointer; padding: 12px;
+  }
+  .drop.over { border-color: var(--figma-color-border-brand-strong, #0d99ff); background: var(--figma-color-bg-brand-tertiary, #e5f4ff); }
+  #status { margin-top: 12px; min-height: 36px; }
+  .err { color: var(--figma-color-text-danger, #d00); }
+  input { display: none; }
+</style>
+<h1>Import from Project Ars</h1>
+<p>Choose the <b>.figma.json</b> file (Export → Figma) or a <b>.ars.json</b> project file.</p>
+<label class="drop" id="drop">
+  <span>Click to choose<br />or drop the file here</span>
+  <input id="file" type="file" accept=".json,application/json" />
+</label>
+<div id="status"></div>
+<script>
+  const status = document.getElementById("status");
+  const drop = document.getElementById("drop");
+  const show = (text, error) => {
+    status.textContent = text;
+    status.className = error ? "err" : "";
+  };
+
+  async function load(file) {
+    if (!file) return;
+    show(`Importing ${file.name}…`);
+    let doc;
+    try {
+      doc = JSON.parse(await file.text());
+    } catch {
+      return show("Not a valid JSON file.", true);
+    }
+    // The plugin sandbox has no decoders: hand it SVG markup and raw image bytes.
+    for (const n of Array.isArray(doc) ? doc : doc.nodes || []) {
+      if (n.type !== "image" || !n.src) continue;
+      try {
+        const blob = await (await fetch(n.src)).blob();
+        if (blob.type === "image/svg+xml") n.svg = await blob.text();
+        else n.bytes = new Uint8Array(await blob.arrayBuffer());
+      } catch {
+        // not embedded (e.g. an /api/assets link): the plugin draws a placeholder
+      }
+    }
+    parent.postMessage({ pluginMessage: { type: "import", doc } }, "*");
+  }
+
+  document.getElementById("file").onchange = (e) => load(e.target.files[0]);
+  drop.ondragover = (e) => {
+    e.preventDefault();
+    drop.classList.add("over");
+  };
+  drop.ondragleave = () => drop.classList.remove("over");
+  drop.ondrop = (e) => {
+    e.preventDefault();
+    drop.classList.remove("over");
+    load(e.dataTransfer.files[0]);
+  };
+
+  onmessage = (e) => {
+    const msg = e.data.pluginMessage;
+    if (msg.type === "done") {
+      const fonts = msg.missingFonts.length ? ` Missing fonts (replaced with Inter): ${msg.missingFonts.join(", ")}.` : "";
+      show(`${msg.count} layers imported.${fonts}`);
+    } else if (msg.type === "error") show(msg.message, true);
+  };
+</script>
