@@ -1,0 +1,9 @@
+# Default owner for repository-wide changes
+* @enz0rd
+
+# Critical backend and infrastructure surfaces
+/server/ @enz0rd
+/supabase/ @enz0rd
+/scripts/ @enz0rd
+/vercel.json @enz0rd
+/SECURITY.md @enz0rd
