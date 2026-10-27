@@ -1,5 +1,5 @@
-import { Cloud, CloudOff, FileJson, Keyboard, LoaderCircle, Moon, Radio, Settings, Shapes, Share2, Sun, ImageDown } from "lucide-react";
-import { exportFigma, exportPng, exportSvg } from "../actions.ts";
+import { Cloud, CloudOff, FileJson, Keyboard, LoaderCircle, Moon, Radio, Settings, Share2, Sun, ImageDown } from "lucide-react";
+import { exportPng, exportSvg } from "../actions.ts";
 import { download } from "../export.ts";
 import { useT } from "../i18n/index.ts";
 import { linkProps } from "../router.ts";
@@ -69,7 +69,6 @@ export function TopBar() {
             { label: `PNG 1x (${scope})`, icon: <ImageDown size={14} />, onSelect: () => exportPng(1) },
             { label: `PNG 2x (${scope})`, icon: <ImageDown size={14} />, onSelect: () => exportPng(2) },
             { label: `SVG (${scope})`, icon: <ImageDown size={14} />, onSelect: exportSvg },
-            { label: `${t("export.figma")} (${scope})`, icon: <Shapes size={14} />, onSelect: exportFigma },
             { separator: true },
             { label: t("export.json"), icon: <FileJson size={14} />, onSelect: saveJson },
           ]}
