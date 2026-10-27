@@ -13,6 +13,7 @@ interface UiState {
   toast: { id: number; text: string } | null;
   /** Bumped to ask the Claude composer to take focus. */
   focusComposer: number;
+  prototypeOpen: boolean;
 
   setTheme: (theme: Theme) => void;
   setRightTab: (tab: RightTab) => void;
@@ -21,6 +22,7 @@ interface UiState {
   setCanvasSize: (size: { width: number; height: number }) => void;
   showToast: (text: string) => void;
   askClaude: () => void;
+  setPrototypeOpen: (open: boolean) => void;
 }
 
 const THEME_KEY = "ars:theme";
@@ -43,6 +45,7 @@ export const useUi = create<UiState>((set) => ({
   canvasSize: { width: 800, height: 600 },
   toast: null,
   focusComposer: 0,
+  prototypeOpen: false,
 
   setTheme: (theme) => {
     set({ theme });
@@ -62,4 +65,5 @@ export const useUi = create<UiState>((set) => ({
     setTimeout(() => set((s) => (s.toast?.id === id ? { toast: null } : s)), 2200);
   },
   askClaude: () => set((s) => ({ rightTab: "claude", focusComposer: s.focusComposer + 1 })),
+  setPrototypeOpen: (prototypeOpen) => set({ prototypeOpen }),
 }));

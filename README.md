@@ -8,7 +8,8 @@ agents you already use — Claude Code, Cursor, Codex, Gemini CLI, any MCP clien
 and edit your designs live.
 
 - **Editor**: artboards, rectangles, ellipses, text and images; groups and nesting; smart guides and
-  snapping; align/distribute; undo/redo; PNG, SVG and project-file export; light and dark themes.
+  snapping; align/distribute; undo/redo; interactive prototype transitions between artboards; PNG, SVG
+  and project-file export; light and dark themes.
 - **Assistant**: bring your own key — Claude (Anthropic) or any OpenAI-compatible API (OpenAI,
   OpenRouter, Gemini, Groq, Mistral…). Edits stream onto the canvas and undo as one step.
 - **Agents over MCP**: a Streamable HTTP endpoint at `/mcp`, authenticated with personal access

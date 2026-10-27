@@ -34,6 +34,12 @@ test("sanitize coerces hostile input into well-typed nodes", () => {
   const [font] = sanitizeNodes([{ id: "t", type: "text", fontFamily: 'Inter", serif; } <x', text: "<b>hi</b>" }]);
   assert.equal(font.fontFamily, "Inter serif  x");
   assert.equal(font.text, "<b>hi</b>");
+  const [proto] = sanitizeNodes([{ id: "p", type: "rect", prototypeToId: "target", prototypeTransition: "smart", prototypeDurationMs: "700", prototypeDirection: "up", prototypeEasing: "bogus" }]);
+  assert.equal(proto.prototypeToId, "target");
+  assert.equal(proto.prototypeTransition, "smart");
+  assert.equal(proto.prototypeDurationMs, 700);
+  assert.equal(proto.prototypeDirection, "up");
+  assert.equal(proto.prototypeEasing, undefined);
 });
 
 test("groups fit their children and move/scale them", () => {

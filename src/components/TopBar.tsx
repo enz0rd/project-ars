@@ -1,4 +1,4 @@
-import { Cloud, CloudOff, FileJson, Keyboard, LoaderCircle, Moon, Radio, Settings, Share2, Sun, ImageDown } from "lucide-react";
+import { Cloud, CloudOff, FileJson, ImageDown, Keyboard, LoaderCircle, Moon, Play, Radio, Settings, Share2, Square, Sun } from "lucide-react";
 import { exportPng, exportSvg } from "../actions.ts";
 import { download } from "../export.ts";
 import { useT } from "../i18n/index.ts";
@@ -18,6 +18,8 @@ export function TopBar() {
   const theme = useUi((s) => s.theme);
   const setTheme = useUi((s) => s.setTheme);
   const setShortcutsOpen = useUi((s) => s.setShortcutsOpen);
+  const prototypeOpen = useUi((s) => s.prototypeOpen);
+  const setPrototypeOpen = useUi((s) => s.setPrototypeOpen);
   const openSettings = useSettings((s) => s.setOpen);
   const status = useSync((s) => s.status);
   const live = useSync((s) => s.live);
@@ -51,6 +53,13 @@ export function TopBar() {
         </span>
         <button className="icon-btn" title={t("editor.shortcuts")} onClick={() => setShortcutsOpen(true)}>
           <Keyboard size={16} />
+        </button>
+        <button
+          className={`icon-btn ${prototypeOpen ? "on" : ""}`}
+          title={prototypeOpen ? t("prototype.stop") : t("prototype.preview")}
+          onClick={() => setPrototypeOpen(!prototypeOpen)}
+        >
+          {prototypeOpen ? <Square size={16} /> : <Play size={16} />}
         </button>
         <button
           className="icon-btn"

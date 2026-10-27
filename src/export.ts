@@ -20,7 +20,10 @@ export function toSvg(
   const all = withContent(nodes, doc);
   const index = byId(all);
   const visible = all.filter((n) => n.type !== "group" && effective(index, n).visible);
-  const b = boundsOf(visible);
+  // Exporting views: the image is the frames' size; overflowing content is cropped by the viewBox.
+  const inIds = new Set(all.map((n) => n.id));
+  const top = all.filter((n) => !n.parentId || !inIds.has(n.parentId));
+  const b = boundsOf(top.every((n) => n.type === "frame" && n.visible) ? top : visible);
   if (!b) return null;
   const width = Math.ceil(b.width + PADDING * 2);
   const height = Math.ceil(b.height + PADDING * 2);

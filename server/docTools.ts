@@ -1,7 +1,15 @@
 import { z } from "zod/v4";
 import { autoOrganize, groupNodes, ungroupNodes } from "../shared/tree.ts";
 import { loadImage, storeAsset } from "./assets.ts";
-import { NODE_DEFAULTS, uid, type DesignNode, type DocOp } from "../shared/types.ts";
+import {
+  NODE_DEFAULTS,
+  PROTOTYPE_DIRECTIONS,
+  PROTOTYPE_EASINGS,
+  PROTOTYPE_TRANSITIONS,
+  uid,
+  type DesignNode,
+  type DocOp,
+} from "../shared/types.ts";
 
 /**
  * Canvas-editing tools shared by the in-app Claude agent (server/ai.ts) and the
@@ -60,6 +68,14 @@ const nodeFields = {
   textAlign: z.enum(["left", "center", "right"]).optional(),
   src: z.string().optional().describe('Image nodes: an "asset:..." reference returned by import_image'),
   parentId: z.string().nullable().optional().describe("Id of the containing frame or group; null moves it to the top level"),
+  prototypeToId: z.string().optional().describe("Prototype link: id of the top-level frame to show when this node is clicked in preview"),
+  prototypeTransition: z
+    .enum(PROTOTYPE_TRANSITIONS)
+    .optional()
+    .describe('"smart" morphs layers with the same name between the two frames (position, size, rotation, opacity)'),
+  prototypeDirection: z.enum(PROTOTYPE_DIRECTIONS).optional().describe('"slide"/"push": the way the content moves, default "left"'),
+  prototypeEasing: z.enum(PROTOTYPE_EASINGS).optional().describe('Default "ease"; "spring" overshoots slightly'),
+  prototypeDurationMs: z.number().optional().describe("50-5000, default 280"),
 };
 
 const newNodeSchema = z.object({

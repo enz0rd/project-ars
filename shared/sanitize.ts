@@ -1,4 +1,4 @@
-import { NODE_DEFAULTS, type DesignNode, type NodeType } from "./types.ts";
+import { NODE_DEFAULTS, PROTOTYPE_DIRECTIONS, PROTOTYPE_EASINGS, PROTOTYPE_TRANSITIONS, type DesignNode, type NodeType } from "./types.ts";
 
 /**
  * Coerces untrusted node data (imported files, stored documents) into well-typed
@@ -10,9 +10,9 @@ const COLOR = /^(#[0-9a-f]{3,8}|transparent|rgba?\([\d\s.,%]+\)|[a-z]{3,20})$/i;
 const ID = /^[A-Za-z0-9_-]{1,64}$/;
 /** Images may only point at the user's storage, embedded data, or https. */
 const SRC = /^(asset:[0-9a-f-]{36}\/[0-9a-f]{16,64}\.(png|jpg|gif|webp|svg)|data:image\/(png|jpeg|gif|webp|svg\+xml);base64,[A-Za-z0-9+/=]+|https:\/\/\S+)$/;
-
 const num = (v: unknown, fallback = 0) => (typeof v === "number" && Number.isFinite(v) ? v : Number.isFinite(Number(v)) && v !== "" && v !== null ? Number(v) : fallback);
 const str = (v: unknown, max: number, fallback = "") => (typeof v === "string" ? v.slice(0, max) : fallback);
+const oneOf = <T extends string>(v: unknown, options: readonly T[]): v is T => options.includes(v as T);
 const color = (v: unknown, fallback: string) => (typeof v === "string" && COLOR.test(v.trim()) ? v.trim() : fallback);
 
 export function sanitizeNodes(input: unknown): DesignNode[] {
@@ -45,6 +45,11 @@ export function sanitizeNodes(input: unknown): DesignNode[] {
       locked: r.locked === true,
     };
     if (typeof r.parentId === "string" && ID.test(r.parentId)) n.parentId = r.parentId;
+    if (typeof r.prototypeToId === "string" && ID.test(r.prototypeToId)) n.prototypeToId = r.prototypeToId;
+    if (oneOf(r.prototypeTransition, PROTOTYPE_TRANSITIONS)) n.prototypeTransition = r.prototypeTransition;
+    if (oneOf(r.prototypeDirection, PROTOTYPE_DIRECTIONS)) n.prototypeDirection = r.prototypeDirection;
+    if (oneOf(r.prototypeEasing, PROTOTYPE_EASINGS)) n.prototypeEasing = r.prototypeEasing;
+    if (r.prototypeDurationMs !== undefined) n.prototypeDurationMs = Math.max(50, Math.min(5000, Math.round(num(r.prototypeDurationMs, 280))));
     const s = r.shadow as Record<string, unknown> | null | undefined;
     if (s && typeof s === "object") {
       n.shadow = { x: num(s.x), y: num(s.y), blur: Math.max(0, num(s.blur)), color: color(s.color, "#00000033") };

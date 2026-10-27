@@ -67,6 +67,7 @@
 
 :root {
   --radius: 9px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --radius-lg: 14px;
   font-family:
     Manrope,
@@ -226,7 +227,11 @@ code {
   transition:
     background 0.12s,
     border-color 0.12s,
-    filter 0.12s;
+    filter 0.12s,
+    transform 0.12s;
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 .btn.sm {
   height: 27px;
@@ -516,18 +521,34 @@ select.input {
 .landing-page {
   height: 100%;
   overflow: auto;
+  background: var(--bg);
+}
+.landing-page::before,
+.landing-page::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+/* Aurora: three soft blobs that drift independently. */
+.landing-page::before {
+  inset: -15%;
   background:
-    radial-gradient(
-      55% 45% at 0% 0%,
-      color-mix(in srgb, var(--accent) 16%, transparent),
-      transparent 70%
-    ),
-    radial-gradient(
-      50% 40% at 100% 10%,
-      color-mix(in srgb, var(--select) 20%, transparent),
-      transparent 75%
-    ),
-    var(--bg);
+    radial-gradient(40% 35% at 15% 20%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 70%),
+    radial-gradient(35% 35% at 85% 15%, color-mix(in srgb, var(--select) 26%, transparent), transparent 70%),
+    radial-gradient(45% 40% at 60% 90%, color-mix(in srgb, var(--accent) 16%, var(--select) 8%), transparent 70%);
+  background-size: 140% 140%;
+  filter: blur(30px);
+}
+/* Faint grid, fading out toward the bottom. */
+.landing-page::after {
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 56px 56px;
+  opacity: 0.35;
+  mask-image: radial-gradient(70% 60% at 50% 0%, #000, transparent);
 }
 .landing-header {
   position: sticky;
@@ -543,6 +564,8 @@ select.input {
   backdrop-filter: blur(8px);
 }
 .landing-main {
+  position: relative;
+  z-index: 1;
   max-width: 1100px;
   margin: 0 auto;
   padding: 42px clamp(16px, 4vw, 48px) 76px;
@@ -574,6 +597,13 @@ select.input {
   line-height: 1.02;
   max-width: 12ch;
 }
+.landing-hero h1 em {
+  font-style: normal;
+  background: linear-gradient(100deg, var(--accent), var(--select));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 .landing-hero p {
   margin: 0;
   max-width: 680px;
@@ -598,6 +628,23 @@ select.input {
   border-radius: 14px;
   padding: 16px 16px 18px;
   box-shadow: var(--shadow-md);
+  transition:
+    translate 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+/* `translate`, not `transform`: the scroll reveal below owns `transform`. */
+.landing-card:hover {
+  translate: 0 -3px;
+  border-color: color-mix(in srgb, var(--select) 40%, var(--border));
+  box-shadow: var(--shadow-lg);
+}
+.landing-cta .btn.primary svg {
+  transition: translate 0.2s ease;
+}
+.landing-cta .btn.primary:hover svg,
+.landing-final-cta .btn.primary:hover svg {
+  translate: 3px 0;
 }
 .landing-card h2 {
   margin: 0 0 8px;
@@ -657,6 +704,65 @@ select.input {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+}
+.landing-final-cta .btn.primary svg {
+  transition: translate 0.2s ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .landing-page::before {
+    animation: landing-drift 18s ease-in-out infinite alternate, landing-hue 40s linear infinite;
+  }
+  .landing-hero > * {
+    animation: landing-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .landing-hero > :nth-child(2) {
+    animation-delay: 0.08s;
+  }
+  .landing-hero > :nth-child(3) {
+    animation-delay: 0.16s;
+  }
+  .landing-hero > :nth-child(4) {
+    animation-delay: 0.22s;
+  }
+  .landing-hero > :nth-child(5) {
+    animation-delay: 0.28s;
+  }
+  /* Sections fade up as they scroll into view; browsers without scroll timelines just show them. */
+  @supports (animation-timeline: view()) {
+    .landing-card,
+    .landing-steps,
+    .landing-final-cta {
+      animation: landing-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+  }
+}
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+@keyframes landing-drift {
+  0% {
+    transform: translate(0, 0) scale(1);
+    background-position: 0% 0%;
+  }
+  50% {
+    transform: translate(4%, -3%) scale(1.08);
+    background-position: 100% 40%;
+  }
+  100% {
+    transform: translate(-3%, 4%) scale(1.04);
+    background-position: 30% 100%;
+  }
+}
+@keyframes landing-hue {
+  to {
+    filter: blur(30px) hue-rotate(40deg);
+  }
 }
 
 /* ---------- Dashboard ---------- */
@@ -758,11 +864,14 @@ select.input {
   overflow: hidden;
   min-height: 240px;
   transition:
-    border-color 0.15s,
-    transform 0.15s;
+    border-color 0.2s,
+    translate 0.25s var(--ease),
+    box-shadow 0.25s var(--ease);
 }
 .project-card:hover {
   border-color: var(--border-strong);
+  translate: 0 -3px;
+  box-shadow: var(--shadow-md);
 }
 .project-card.skeleton {
   background: linear-gradient(
@@ -1357,6 +1466,53 @@ button.layer-toggle:hover {
   background: var(--surface-2);
 }
 
+.prototype-player {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--bg) 70%, #000);
+}
+.prototype-topbar {
+  height: 46px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.prototype-stage {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  overflow: auto;
+  padding: 20px;
+}
+.prototype-viewport {
+  /* margin: auto centers short frames and still lets tall pages scroll from the top. */
+  margin: auto;
+  flex: none;
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+.prototype-scene {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--canvas);
+}
+.prototype-scene.enter {
+  position: absolute;
+  left: 0;
+}
+
 /* ---------- Menus ---------- */
 .menu {
   position: fixed;
@@ -1366,7 +1522,7 @@ button.layer-toggle:hover {
   border-radius: 12px;
   background: var(--surface);
   box-shadow: var(--shadow-lg);
-  animation: pop 0.1s ease-out;
+  animation: pop 0.16s var(--ease);
 }
 .menu-item {
   display: flex;
@@ -1894,7 +2050,7 @@ button.layer-toggle:hover {
   background: var(--surface);
   border-radius: 18px;
   box-shadow: var(--shadow-lg);
-  animation: pop 0.14s ease-out;
+  animation: pop 0.22s var(--ease);
 }
 .modal.wide {
   width: min(760px, 100%);
@@ -2179,7 +2335,7 @@ button.layer-toggle:hover {
   color: var(--surface);
   font-weight: 600;
   box-shadow: var(--shadow-lg);
-  animation: toast 0.18s ease-out;
+  animation: toast 0.28s var(--ease);
 }
 @keyframes toast {
   from {
@@ -2253,5 +2409,48 @@ button.layer-toggle:hover {
   }
   .landing-hero h1 {
     max-width: none;
+  }
+}
+
+/* ---------- Motion ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .auth-card,
+  .project-card {
+    animation: landing-rise 0.45s var(--ease) both;
+  }
+  .project-card:nth-child(2) { animation-delay: 0.04s; }
+  .project-card:nth-child(3) { animation-delay: 0.08s; }
+  .project-card:nth-child(4) { animation-delay: 0.12s; }
+  .project-card:nth-child(n + 5) { animation-delay: 0.16s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- Page transitions ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: vt-out 0.18s ease-in both;
+  }
+  ::view-transition-new(root) {
+    animation: vt-in 0.32s var(--ease) both;
+  }
+}
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    transform: scale(0.99);
+  }
+}
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
 }

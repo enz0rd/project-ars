@@ -9,6 +9,7 @@ import { Toast } from "../components/Toast.tsx";
 import { TOOL_KEYS, ToolRail } from "../components/ToolRail.tsx";
 import { TopBar } from "../components/TopBar.tsx";
 import { ZoomControls } from "../components/ZoomControls.tsx";
+import { PrototypePlayer } from "../components/PrototypePlayer.tsx";
 import { useT } from "../i18n/index.ts";
 import { linkProps } from "../router.ts";
 import { useSettings } from "../settings.ts";
@@ -28,6 +29,7 @@ const ALIGN_KEYS: Record<string, actions.AlignKind> = {
 export function EditorPage({ id }: { id: string }) {
   const t = useT();
   const status = useSync((s) => s.status);
+  const prototypeOpen = useUi((s) => s.prototypeOpen);
 
   useEffect(() => {
     void openProject(id).then(() => {
@@ -72,6 +74,7 @@ export function EditorPage({ id }: { id: string }) {
       if (key === "?") return handled(), ui.setShortcutsOpen(true);
       if (key === "delete" || key === "backspace") return handled(), s.deleteSelection();
       if (key === "escape") {
+        if (ui.prototypeOpen) return ui.setPrototypeOpen(false);
         ui.setContextMenu(null);
         s.select([]);
         s.setTool("select");
@@ -124,6 +127,7 @@ export function EditorPage({ id }: { id: string }) {
         <main className="stage">
           {status === "loading" ? <div className="stage-loading">{t("common.loading")}</div> : <Canvas />}
           <ZoomControls />
+          {prototypeOpen && <PrototypePlayer />}
         </main>
         <Inspector />
       </div>

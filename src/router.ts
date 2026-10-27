@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { flushSync } from "react-dom";
 
 /** A tiny pushState router: the app has only a handful of screens. */
 export type Route =
@@ -22,12 +23,21 @@ export function parse(path: string): Route {
 }
 
 const listeners = new Set<() => void>();
-window.addEventListener("popstate", () => listeners.forEach((l) => l()));
+const notify = () => listeners.forEach((l) => l());
+
+/** Cross-fades the screen change where the browser supports view transitions. */
+function transition(update: () => void) {
+  if (!document.startViewTransition || matchMedia("(prefers-reduced-motion: reduce)").matches) return update();
+  document.startViewTransition(() => flushSync(update));
+}
+window.addEventListener("popstate", () => transition(notify));
 
 export function navigate(path: string, replace = false) {
   if (path === location.pathname) return;
-  history[replace ? "replaceState" : "pushState"](null, "", path);
-  listeners.forEach((l) => l());
+  transition(() => {
+    history[replace ? "replaceState" : "pushState"](null, "", path);
+    notify();
+  });
 }
 
 export function useRoute(): Route {

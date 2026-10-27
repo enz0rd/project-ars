@@ -2,7 +2,7 @@ import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import { toNodeHandler } from "@modelcontextprotocol/node";
 import { z } from "zod/v4";
 import * as docTools from "./docTools.ts";
-import { activeSelection, listProjects, loadProject, setActiveProject, withProject } from "./projects.ts";
+import { activeSelection, listProjects, loadProject, resolveProject, setActiveProject, withProject } from "./projects.ts";
 import { broadcast } from "./realtime.ts";
 
 /**
@@ -116,7 +116,7 @@ const handler = createMcpHandler(async ({ authInfo }) => {
     },
     async ({ ids, project_id }) =>
       run(async () => {
-        const project = await loadProject(userId, (await listProjects(userId)).find((p) => p.id === project_id || (!project_id && p.active))?.id ?? project_id ?? "");
+        const project = await loadProject(userId, await resolveProject(userId, project_id));
         const known = new Set(project.document.nodes.map((n) => n.id));
         await broadcast(project.id, { type: "select", ids: ids.filter((id) => known.has(id)) });
         return "Selected.";

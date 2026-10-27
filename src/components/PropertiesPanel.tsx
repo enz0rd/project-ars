@@ -19,7 +19,7 @@ import {
   SquareRoundCorner,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { DesignNode, Shadow } from "../../shared/types.ts";
+import { PROTOTYPE_DIRECTIONS, PROTOTYPE_EASINGS, PROTOTYPE_TRANSITIONS, type DesignNode, type PrototypeDirection, type PrototypeEasing, type PrototypeTransition, type Shadow } from "../../shared/types.ts";
 import { align, distribute, exportPng, exportSvg, pickImages } from "../actions.ts";
 import { useAssetUrl } from "../assets.ts";
 import { tc, useT, type Key } from "../i18n/index.ts";
@@ -44,6 +44,8 @@ export function PropertiesPanel() {
   const isGroup = selected.every((s) => s.type === "group");
   const isImage = selected.every((s) => s.type === "image");
   const hasRadius = selected.every((s) => s.type === "rect" || s.type === "frame" || s.type === "image");
+  const single = selected.length === 1 ? selected[0] : null;
+  const topFrames = nodes.filter((x) => x.type === "frame" && !x.parentId);
 
   return (
     <div className="props">
@@ -91,6 +93,12 @@ export function PropertiesPanel() {
       <Section title={t("props.layer")}>
         <OpacityField value={n.opacity} ids={ids} />
       </Section>
+
+      {single && (
+        <Section title={t("props.prototype")}>
+          <PrototypeFields node={single} frames={topFrames} />
+        </Section>
+      )}
 
       {!isGroup && !isImage && (
         <Section title={isText ? t("props.textColor") : t("props.fill")}>
@@ -459,6 +467,91 @@ function ShadowFields({ shadow, ids }: { shadow: Shadow; ids: string[] }) {
         onPreview={(v) => useEditor.getState().updateNodes(ids, { shadow: { ...shadow, color: v } })}
         onCommit={(v) => set({ color: v })}
       />
+    </>
+  );
+}
+
+function PrototypeFields({ node, frames }: { node: DesignNode; frames: DesignNode[] }) {
+  const t = useT();
+  const targetOptions = frames.filter((f) => f.id !== node.id);
+  const ids = [node.id];
+  const target = node.prototypeToId && targetOptions.some((f) => f.id === node.prototypeToId) ? node.prototypeToId : "";
+  const transition: PrototypeTransition = node.prototypeTransition ?? "dissolve";
+  const duration = node.prototypeDurationMs ?? 280;
+  return (
+    <>
+      <label className="field">
+        <span className="field-label">{t("prototype.to")}</span>
+        <select
+          value={target}
+          onChange={(e) => {
+            const value = e.target.value;
+            if (!value) return commit(ids, { prototypeToId: undefined });
+            commit(ids, { prototypeToId: value, prototypeTransition: node.prototypeTransition ?? "dissolve", prototypeDurationMs: node.prototypeDurationMs ?? 280 });
+          }}
+        >
+          <option value="">{t("prototype.none")}</option>
+          {targetOptions.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="grid2">
+        <label className="field">
+          <span className="field-label">{t("prototype.transition")}</span>
+          <select value={transition} onChange={(e) => commit(ids, { prototypeTransition: e.target.value as PrototypeTransition })}>
+            {PROTOTYPE_TRANSITIONS.map((v) => (
+              <option key={v} value={v}>
+                {t(`prototype.${v}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span className="field-label">{t("prototype.duration")}</span>
+          <input
+            value={duration}
+            onChange={(e) => {
+              const ms = Number(e.target.value);
+              if (Number.isFinite(ms)) commit(ids, { prototypeDurationMs: Math.max(50, Math.min(5000, Math.round(ms))) });
+            }}
+            onBlur={(e) => {
+              const ms = Number(e.currentTarget.value);
+              if (Number.isFinite(ms)) e.currentTarget.value = String(Math.max(50, Math.min(5000, Math.round(ms))));
+            }}
+          />
+          <span className="field-suffix">ms</span>
+        </label>
+      </div>
+      {transition !== "instant" && (
+        <div className="grid2">
+          {(transition === "slide" || transition === "push") && (
+            <label className="field">
+              <span className="field-label">{t("prototype.direction")}</span>
+              <select value={node.prototypeDirection ?? "left"} onChange={(e) => commit(ids, { prototypeDirection: e.target.value as PrototypeDirection })}>
+                {PROTOTYPE_DIRECTIONS.map((v) => (
+                  <option key={v} value={v}>
+                    {t(`prototype.dir.${v}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <label className="field">
+            <span className="field-label">{t("prototype.easing")}</span>
+            <select value={node.prototypeEasing ?? "ease"} onChange={(e) => commit(ids, { prototypeEasing: e.target.value as PrototypeEasing })}>
+              {PROTOTYPE_EASINGS.map((v) => (
+                <option key={v} value={v}>
+                  {t(`prototype.ease.${v}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
+      <span className="muted small">{t("prototype.hint")}</span>
     </>
   );
 }

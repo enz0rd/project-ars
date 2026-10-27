@@ -1,4 +1,10 @@
 export type NodeType = "frame" | "group" | "rect" | "ellipse" | "text" | "image";
+export const PROTOTYPE_TRANSITIONS = ["instant", "dissolve", "slide", "push", "smart"] as const;
+export const PROTOTYPE_DIRECTIONS = ["left", "right", "up", "down"] as const;
+export const PROTOTYPE_EASINGS = ["ease", "easeInOut", "linear", "spring"] as const;
+export type PrototypeTransition = (typeof PROTOTYPE_TRANSITIONS)[number];
+export type PrototypeDirection = (typeof PROTOTYPE_DIRECTIONS)[number];
+export type PrototypeEasing = (typeof PROTOTYPE_EASINGS)[number];
 
 export interface DesignNode {
   id: string;
@@ -21,6 +27,15 @@ export interface DesignNode {
   parentId?: string;
   /** Image-only: /api/assets/<file> (or a data: URL). The image covers the box. */
   src?: string;
+  /** Prototype: click this node to go to another top-level frame. */
+  prototypeToId?: string;
+  /** Prototype transition style when this node is used as trigger. */
+  prototypeTransition?: PrototypeTransition;
+  /** Prototype transition duration in milliseconds. */
+  prototypeDurationMs?: number;
+  /** Slide/push: the way the content moves. */
+  prototypeDirection?: PrototypeDirection;
+  prototypeEasing?: PrototypeEasing;
   // text-only
   text?: string;
   fontSize?: number;
