@@ -16,9 +16,8 @@ and edit your designs live.
 - **Accounts**: email/password sign-up (optionally GitHub), a dashboard of your projects, and up to
   **5 projects per account**.
 - **Landing page**: signed-out visitors see a product overview page with quick entry to sign in or create an account.
+- **SEO-ready web app**: canonical metadata, social cards, robots and sitemap for indexing at `https://projectars.enz0rd.com`.
 - **Languages**: English, Português (Brasil) and Español.
-- **Figma interop**: export a `.figma.json` and rebuild it as native layers with the plugin in
-  [`figma-plugin/`](figma-plugin).
 
 ## Stack
 
@@ -83,6 +82,15 @@ claude mcp add --transport http ars https://YOUR-DEPLOYMENT/mcp --header "Author
 Tools: `list_projects`, `open_project`, `get_document`, `create_nodes`, `update_nodes`,
 `delete_nodes`, `reorder_node`, `group_nodes`, `ungroup_nodes`, `organize_layers`, `import_image`,
 `select_nodes`. They act on the project you have open (or `project_id`).
+
+## Search indexing
+
+This repo ships with:
+- `public/robots.txt`
+- `public/sitemap.xml`
+- canonical and social metadata in `index.html`
+
+For the complete Google Search Console flow, see [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Security
 

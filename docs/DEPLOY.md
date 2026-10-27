@@ -93,6 +93,18 @@ Never set `ARS_ALLOW_LOCAL_FILES` on Vercel.
   `Strict-Transport-Security`.
 - Try a 6th project: the dashboard should refuse it.
 
+## Google Search Console
+
+1. Add `https://projectars.enz0rd.com` as a property in Google Search Console.
+2. Verify ownership (recommended: DNS TXT record in the `enz0rd.com` zone).
+3. Submit `https://projectars.enz0rd.com/sitemap.xml`.
+4. Use URL Inspection for `https://projectars.enz0rd.com/` and click **Request indexing**.
+
+This repository already includes:
+- canonical, robots and social meta tags in `index.html`;
+- `public/robots.txt` with sitemap location;
+- `public/sitemap.xml` containing the landing page URL.
+
 ## Changing the project limit
 
 The real limit is in the database (`public.max_projects_per_account()` in the migration); add a new

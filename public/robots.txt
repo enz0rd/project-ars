@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot
+Disallow: /reset
+
+Sitemap: https://projectars.enz0rd.com/sitemap.xml
