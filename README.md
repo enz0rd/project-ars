@@ -15,6 +15,7 @@ and edit your designs live.
   tokens. Edits made by agents are saved and appear live in the open editor.
 - **Accounts**: email/password sign-up (optionally GitHub), a dashboard of your projects, and up to
   **5 projects per account**.
+- **Landing page**: signed-out visitors see a product overview page with quick entry to sign in or create an account.
 - **Languages**: English, Português (Brasil) and Español.
 - **Figma interop**: export a `.figma.json` and rebuild it as native layers with the plugin in
   [`figma-plugin/`](figma-plugin).

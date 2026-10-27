@@ -36,6 +36,9 @@ agents  ──► /mcp (personal access token)  ──► Realtime broadcast ─
      (add `http://localhost:5173/**` only on a development project).
 5. **Authentication → Emails**: set up a custom SMTP provider for production; the built-in sender
    is heavily rate limited.
+   - You can also customize **Confirm signup** in the Supabase dashboard template editor.
+   - For local CLI-based development, this repository already wires
+     `supabase/templates/confirmation.html` via `supabase/config.toml`.
 6. **Realtime → Settings**: turn off **Allow public access**, so only private (authorized)
    channels exist.
 7. **Project Settings → API Keys**: copy the project URL, the **publishable** key

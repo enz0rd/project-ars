@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 
 /** A tiny pushState router: the app has only a handful of screens. */
 export type Route =
+  | { name: "home" }
   | { name: "dashboard" }
   | { name: "editor"; id: string }
   | { name: "login" }
@@ -12,6 +13,7 @@ export type Route =
 export function parse(path: string): Route {
   const editor = /^\/p\/([0-9a-f-]{36})\/?$/i.exec(path);
   if (editor) return { name: "editor", id: editor[1] };
+  if (path === "/") return { name: "home" };
   if (path === "/login") return { name: "login" };
   if (path === "/signup") return { name: "signup" };
   if (path === "/forgot") return { name: "forgot" };

@@ -5,10 +5,11 @@ import { supabase } from "./lib/supabase.ts";
 import { AuthPage } from "./pages/AuthPage.tsx";
 import { Dashboard } from "./pages/Dashboard.tsx";
 import { EditorPage } from "./pages/EditorPage.tsx";
+import { LandingPage } from "./pages/LandingPage.tsx";
 import { navigate, useRoute } from "./router.ts";
 import { useUi } from "./ui.ts";
 
-const PUBLIC = new Set(["login", "signup", "forgot", "reset"]);
+const PUBLIC = new Set(["home", "login", "signup", "forgot", "reset"]);
 
 export function App() {
   const theme = useUi((s) => s.theme);
@@ -47,6 +48,7 @@ export function App() {
   if (route.name === "login" || route.name === "signup" || route.name === "forgot" || route.name === "reset") {
     return <AuthPage mode={route.name} />;
   }
+  if (route.name === "home") return session ? <Dashboard /> : <LandingPage />;
   if (!session) return <div className="center-page" />;
   if (route.name === "editor") return <EditorPage key={route.id} id={route.id} />;
   return <Dashboard />;

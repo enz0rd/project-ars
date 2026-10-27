@@ -1,0 +1,43 @@
+{{ $locale := index .Data "locale" }}
+<!doctype html>
+<html lang="{{ if eq $locale `pt-BR` }}pt-BR{{ else if eq $locale `es` }}es{{ else }}en{{ end }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>
+      {{ if eq $locale "pt-BR" }}Confirme sua conta{{ else if eq $locale "es" }}Confirma tu cuenta{{ else }}Confirm your account{{ end }}
+    </title>
+  </head>
+  <body style="margin:0;padding:24px;background:#0b0d10;color:#eceef1;font-family:Inter,Arial,sans-serif;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;margin:0 auto;background:#111418;border:1px solid #232831;border-radius:14px;overflow:hidden;">
+      <tr>
+        <td style="padding:28px 28px 14px;">
+          <p style="margin:0 0 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#a5acb8;">Project Ars</p>
+          <h1 style="margin:0;font-size:28px;line-height:1.1;letter-spacing:-.02em;">
+            {{ if eq $locale "pt-BR" }}Confirme sua conta{{ else if eq $locale "es" }}Confirma tu cuenta{{ else }}Confirm your account{{ end }}
+          </h1>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:0 28px 24px;">
+          <p style="margin:0 0 18px;color:#c8ced8;line-height:1.6;">
+            {{ if eq $locale "pt-BR" }}Clique no botão abaixo para confirmar seu e-mail e começar a usar o editor.{{ else if eq $locale "es" }}Haz clic en el botón de abajo para confirmar tu correo y empezar a usar el editor.{{ else }}Click the button below to confirm your email and start using the editor.{{ end }}
+          </p>
+          <p style="margin:0 0 22px;">
+            <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#d4ff3a;color:#0b0d10;text-decoration:none;font-weight:700;padding:11px 16px;border-radius:10px;">
+              {{ if eq $locale "pt-BR" }}Confirmar conta{{ else if eq $locale "es" }}Confirmar cuenta{{ else }}Confirm account{{ end }}
+            </a>
+          </p>
+          <p style="margin:0;color:#8f97a6;font-size:12px;line-height:1.55;">
+            {{ if eq $locale "pt-BR" }}Se você não criou essa conta, pode ignorar este e-mail.{{ else if eq $locale "es" }}Si no creaste esta cuenta, puedes ignorar este correo.{{ else }}If you did not create this account, you can ignore this email.{{ end }}
+          </p>
+          <p style="margin:10px 0 0;color:#8f97a6;font-size:12px;line-height:1.55;word-break:break-word;">
+            {{ if eq $locale "pt-BR" }}Se o botão não funcionar, cole este link no navegador:{{ else if eq $locale "es" }}Si el botón no funciona, pega este enlace en tu navegador:{{ else }}If the button does not work, paste this link into your browser:{{ end }}
+            <br />
+            <a href="{{ .ConfirmationURL }}" style="color:#d4ff3a;">{{ .ConfirmationURL }}</a>
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

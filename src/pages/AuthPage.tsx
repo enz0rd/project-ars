@@ -3,7 +3,7 @@ import { useState } from "react";
 import { ArsLogo, SLOGAN } from "../components/Brand.tsx";
 import { LanguageSelect } from "../components/LanguageSelect.tsx";
 import { useAuth } from "../auth.ts";
-import { errorMessage, useT } from "../i18n/index.ts";
+import { errorMessage, useI18n, useT } from "../i18n/index.ts";
 import { configured, supabase } from "../lib/supabase.ts";
 import { linkProps, navigate, type Route } from "../router.ts";
 
@@ -16,6 +16,7 @@ const MIN_PASSWORD = 8;
 
 export function AuthPage({ mode }: { mode: Mode }) {
   const t = useT();
+  const locale = useI18n((s) => s.locale);
   const recovering = useAuth((s) => s.recovering);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,7 +44,11 @@ export function AuthPage({ mode }: { mode: Mode }) {
         navigate("/", true);
       } else if (mode === "signup") {
         if (password.length < MIN_PASSWORD) throw { code: "weak_password" };
-        const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirect } });
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: redirect, data: { locale } },
+        });
         if (error) throw error;
         // With email confirmation on (recommended), there's no session until the link is clicked.
         if (data.session) navigate("/", true);
