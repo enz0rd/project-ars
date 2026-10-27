@@ -8,8 +8,7 @@ const PADDING = 0;
 
 /**
  * Builds a standalone SVG for the given nodes and everything inside them. Frames and
- * groups become nested <g> elements and every element carries its layer name as `id`,
- * which Figma uses as the layer name when the file is imported.
+ * groups become nested <g> elements and every element carries its layer name as `id`.
  */
 export function toSvg(
   nodes: DesignNode[],

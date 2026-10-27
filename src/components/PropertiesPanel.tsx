@@ -261,7 +261,7 @@ function IconAction({ title, icon, onClick, disabled }: { title: string; icon: R
 
 type NumProp = "x" | "y" | "width" | "height" | "rotation" | "cornerRadius" | "strokeWidth" | "fontSize";
 
-/** Numeric input; drag the label horizontally to scrub the value, like Figma. */
+/** Numeric input; drag the label horizontally to scrub the value. */
 function NumField(props: {
   label: React.ReactNode;
   value: number;

@@ -149,7 +149,6 @@ export const en = {
   "export.button": "Export",
   "export.selection": "selection",
   "export.all": "all",
-  "export.figma": "Figma",
   "export.json": "Project file (.ars.json)",
 
   "menu.ask": "Ask the assistant",
@@ -288,7 +287,6 @@ export const en = {
   "toast.pngExported": "PNG exported",
   "toast.svgExported": "SVG exported",
   "toast.nothingToExport": "Nothing to export",
-  "toast.figmaExported": "File saved — import it in Figma with the Ars Import plugin",
 
   "error.unauthorized": "Your session expired. Sign in again.",
   "error.rate_limited": "Too many requests. Wait a moment and try again.",

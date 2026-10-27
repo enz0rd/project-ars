@@ -56,7 +56,7 @@ export function Canvas() {
     return () => observer.disconnect();
   }, []);
 
-  // Space-to-pan, like Figma.
+  // Hold Space to pan.
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.code === "Space" && !isTyping(e)) {
@@ -482,10 +482,7 @@ function groupChain(nodes: DesignNode[], node: DesignNode): DesignNode[] {
   return chain;
 }
 
-/**
- * What a click on `hit` selects, like Figma: the outermost group around it, unless
- * the selection is already inside that group, in which case it stays at that level.
- */
+/** Selects the outermost containing group unless selection is already inside it. */
 function pick(nodes: DesignNode[], hit: DesignNode | undefined, selection: string[]) {
   if (!hit) return undefined;
   const chain = groupChain(nodes, hit);

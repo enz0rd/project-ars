@@ -150,7 +150,6 @@ export const es: Messages = {
   "export.button": "Exportar",
   "export.selection": "selección",
   "export.all": "todo",
-  "export.figma": "Figma",
   "export.json": "Archivo del proyecto (.ars.json)",
 
   "menu.ask": "Preguntar al asistente",
@@ -289,7 +288,6 @@ export const es: Messages = {
   "toast.pngExported": "PNG exportado",
   "toast.svgExported": "SVG exportado",
   "toast.nothingToExport": "Nada que exportar",
-  "toast.figmaExported": "Archivo guardado — impórtalo en Figma con el plugin Ars Import",
 
   "error.unauthorized": "Tu sesión expiró. Inicia sesión de nuevo.",
   "error.rate_limited": "Demasiadas solicitudes. Espera un momento y vuelve a intentarlo.",

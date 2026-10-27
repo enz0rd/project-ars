@@ -39,7 +39,7 @@ export function LayersPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selection]);
 
-  // Top of the z-order first, like Figma. A search lists every match, flat.
+  // Top of the z-order first. A search lists every match, flat.
   const q = query.trim().toLowerCase();
   const rows = useMemo<Row[]>(() => {
     const kids = childrenOf(nodes);

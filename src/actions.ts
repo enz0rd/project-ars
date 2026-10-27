@@ -9,8 +9,8 @@ import {
   withDescendants,
 } from "../shared/tree.ts";
 import { NODE_DEFAULTS, uid, type DesignNode } from "../shared/types.ts";
-import { inlineImages, isImageFile, uploadImage } from "./assets.ts";
-import { download, downloadPng, downloadSvg } from "./export.ts";
+import { isImageFile, uploadImage } from "./assets.ts";
+import { downloadPng, downloadSvg } from "./export.ts";
 import { boundsOf, parentFrame, type Box } from "./geometry.ts";
 import { useEditor } from "./store.ts";
 import { errorMessage, t, tc } from "./i18n/index.ts";
@@ -53,7 +53,7 @@ export function paste() {
   const s = editor();
   s.checkpoint();
   const { copies, roots } = cloneSubtrees(clipboard, clipboard.map((n) => n.id), 16, 16);
-  // Next paste lands one step further, like Figma.
+  // Next paste lands one step further.
   clipboard = copies;
   s.setNodes([...s.nodes, ...copies], roots);
 }
@@ -308,22 +308,6 @@ function exportName() {
 export async function exportPng(scale = 2) {
   const ok = await downloadPng(exportTargets(), exportName(), scale);
   useUi.getState().showToast(ok ? t("toast.pngExported") : t("toast.nothingToExport"));
-}
-
-/**
- * Saves the document (or the selection with its content) for the import plugin in
- * figma-plugin/, which rebuilds it as native, editable layers in Figma.
- */
-export async function exportFigma() {
-  const { nodes } = editor();
-  const ids = withDescendants(nodes, exportTargets().map((n) => n.id));
-  const picked = nodes.filter((n) => ids.has(n.id));
-  // The file must stand alone: images travel inside it.
-  const images = await inlineImages(picked.flatMap((n) => (n.src ? [n.src] : [])));
-  const out = picked.map((n) => (n.src && images.has(n.src) ? { ...n, src: images.get(n.src) } : n));
-  const doc = { format: "ars", version: 1, name: exportName(), nodes: out };
-  download(new Blob([JSON.stringify(doc)], { type: "application/json" }), `${exportName()}.figma.json`);
-  useUi.getState().showToast(t("toast.figmaExported"));
 }
 
 export async function exportSvg() {

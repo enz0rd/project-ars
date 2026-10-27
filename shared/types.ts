@@ -19,7 +19,7 @@ export interface DesignNode {
   shadow?: Shadow | null;
   /** Containing frame or group (see shared/tree.ts). */
   parentId?: string;
-  /** Image-only: /api/assets/<file> (or a data: URL). The image covers the box, like Figma's "Fill". */
+  /** Image-only: /api/assets/<file> (or a data: URL). The image covers the box. */
   src?: string;
   // text-only
   text?: string;

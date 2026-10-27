@@ -54,10 +54,7 @@ export async function duplicateProject(project: ProjectRow, suffix: string) {
   return createProject(`${project.name} ${suffix}`, project.document.nodes);
 }
 
-/**
- * Creates a project from a JSON file (Project Ars export, the older figma-claude
- * format, or a plain { nodes }). Embedded images are uploaded to the user's storage.
- */
+/** Creates a project from a JSON file (Project Ars export or a plain { nodes }). */
 export async function importProjectFile(file: File): Promise<string> {
   let doc: { name?: unknown; nodes?: unknown };
   try {
@@ -79,12 +76,12 @@ export async function importProjectFile(file: File): Promise<string> {
   const nodes = normalize(
     sanitizeNodes((raw as { src?: string }[]).map((n) => (n?.src && resolved.has(n.src) ? { ...n, src: resolved.get(n.src) } : n))),
   );
-  const name = typeof doc.name === "string" ? doc.name : file.name.replace(/(\.ars|\.figma)?\.json$/i, "");
+  const name = typeof doc.name === "string" ? doc.name : file.name.replace(/(\.ars)?\.json$/i, "");
   return createProject(name, nodes);
 }
 
 /** The document the old single-user version kept in this browser, if any. */
-const LEGACY_KEY = "figma-claude:doc";
+const LEGACY_KEY = "projectars:doc";
 
 export function legacyDraft(): { name: string; nodes: unknown[] } | null {
   try {

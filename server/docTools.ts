@@ -24,7 +24,7 @@ export const CANVAS_GUIDE = `Canvas model:
 - Colors are hex strings like "#1E1E1E" (or "#RRGGBBAA" with alpha). Use "transparent" for no fill.
 - Any node can have a drop shadow; subtle ones (e.g. y 4, blur 16, "#0000001A") look modern.
 - Text nodes use "fill" as the text color; width/height define the text box.
-- Image nodes show "src" covering their box (cropped to fit, like Figma's Fill). Add pictures, logos and icons
+- Image nodes show "src" covering their box (cropped to fit). Add pictures, logos and icons
   with import_image (base64 data or an https URL), which keeps the natural aspect ratio.
 
 Guidelines:

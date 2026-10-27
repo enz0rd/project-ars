@@ -150,7 +150,6 @@ export const ptBR: Messages = {
   "export.button": "Exportar",
   "export.selection": "seleção",
   "export.all": "tudo",
-  "export.figma": "Figma",
   "export.json": "Arquivo do projeto (.ars.json)",
 
   "menu.ask": "Perguntar ao assistente",
@@ -289,7 +288,6 @@ export const ptBR: Messages = {
   "toast.pngExported": "PNG exportado",
   "toast.svgExported": "SVG exportado",
   "toast.nothingToExport": "Nada para exportar",
-  "toast.figmaExported": "Arquivo salvo — importe no Figma com o plugin Ars Import",
 
   "error.unauthorized": "Sua sessão expirou. Entre novamente.",
   "error.rate_limited": "Muitas requisições. Aguarde um pouco e tente de novo.",
