@@ -1,6 +1,6 @@
 /* Project Ars — "Design without boundaries".
    Identity: graphite surfaces, an electric-lime signal colour for actions and a
-   violet for selection and the assistant. Manrope throughout. */
+   violet for selection and the assistant. Manrope for text, Big Shoulders for display headings. */
 
 /* ---------- Theme tokens ---------- */
 :root,
@@ -412,52 +412,36 @@ select.input {
   display: flex;
   align-items: flex-end;
   padding: 56px;
-  background:
-    radial-gradient(
-      60% 50% at 75% 20%,
-      color-mix(in srgb, var(--select) 40%, transparent),
-      transparent 70%
-    ),
-    radial-gradient(
-      50% 40% at 15% 85%,
-      color-mix(in srgb, var(--accent) 22%, transparent),
-      transparent 70%
-    ),
-    #0b0d10;
-  color: #eceef1;
-}
-.auth-art::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  opacity: 0.5;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 32px 32px;
-  mask-image: linear-gradient(to top, black, transparent 85%);
+  background: #d4ff3a;
+  color: #0b0d10;
 }
 .auth-art-inner {
   position: relative;
-  max-width: 520px;
+  max-width: 640px;
 }
 .auth-art .ars-mark-bg {
-  fill: #d4ff3a;
+  fill: #0b0d10;
 }
 .auth-art .ars-mark-stroke {
+  stroke: #d4ff3a;
+}
+.auth-art .ars-mark-node {
+  fill: #8b7bff;
   stroke: #0b0d10;
 }
 .auth-slogan {
-  font-size: clamp(36px, 5vw, 64px);
-  line-height: 1;
-  letter-spacing: -0.035em;
-  margin: 28px 0 16px;
+  font-family: "Big Shoulders", Manrope, Impact, sans-serif;
+  font-size: clamp(64px, 9vw, 150px);
+  line-height: 0.88;
+  text-transform: uppercase;
+  margin: 28px 0 20px;
   font-weight: 800;
 }
 .auth-art p {
-  color: #a5acb8;
-  font-size: 15px;
-  line-height: 1.6;
+  color: #0b0d10;
+  font-size: 17px;
+  max-width: 40ch;
+  line-height: 1.5;
   margin: 0;
 }
 .auth-panel {
@@ -517,251 +501,11 @@ select.input {
   color: var(--text-3);
 }
 
-/* ---------- Landing ---------- */
-.landing-page {
-  height: 100%;
-  overflow: auto;
-  background: var(--bg);
-}
-.landing-page::before,
-.landing-page::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-/* Aurora: three soft blobs that drift independently. */
-.landing-page::before {
-  inset: -15%;
-  background:
-    radial-gradient(40% 35% at 15% 20%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 70%),
-    radial-gradient(35% 35% at 85% 15%, color-mix(in srgb, var(--select) 26%, transparent), transparent 70%),
-    radial-gradient(45% 40% at 60% 90%, color-mix(in srgb, var(--accent) 16%, var(--select) 8%), transparent 70%);
-  background-size: 140% 140%;
-  filter: blur(30px);
-}
-/* Faint grid, fading out toward the bottom. */
-.landing-page::after {
-  background-image:
-    linear-gradient(var(--border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size: 56px 56px;
-  opacity: 0.35;
-  mask-image: radial-gradient(70% 60% at 50% 0%, #000, transparent);
-}
-.landing-header {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 14px clamp(16px, 4vw, 48px);
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: blur(8px);
-}
-.landing-main {
-  position: relative;
-  z-index: 1;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 42px clamp(16px, 4vw, 48px) 76px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-.landing-hero {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.landing-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  width: fit-content;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  color: var(--text-2);
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
-  font-weight: 600;
-}
-.landing-hero h1 {
-  margin: 0;
-  font-size: clamp(34px, 7vw, 58px);
-  letter-spacing: -0.035em;
-  line-height: 1.02;
-  max-width: 12ch;
-}
-.landing-hero h1 em {
-  font-style: normal;
-  background: linear-gradient(100deg, var(--accent), var(--select));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.landing-hero p {
-  margin: 0;
-  max-width: 680px;
-  color: var(--text-2);
-  line-height: 1.6;
-  font-size: 14px;
-}
-.landing-cta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 6px;
-}
-.landing-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-.landing-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 16px 16px 18px;
-  box-shadow: var(--shadow-md);
-  transition:
-    translate 0.25s ease,
-    border-color 0.25s ease,
-    box-shadow 0.25s ease;
-}
-/* `translate`, not `transform`: the scroll reveal below owns `transform`. */
-.landing-card:hover {
-  translate: 0 -3px;
-  border-color: color-mix(in srgb, var(--select) 40%, var(--border));
-  box-shadow: var(--shadow-lg);
-}
-.landing-cta .btn.primary svg {
-  transition: translate 0.2s ease;
-}
-.landing-cta .btn.primary:hover svg,
-.landing-final-cta .btn.primary:hover svg {
-  translate: 3px 0;
-}
-.landing-card h2 {
-  margin: 0 0 8px;
-  font-size: 17px;
-  letter-spacing: -0.02em;
-}
-.landing-card p {
-  margin: 0;
-  color: var(--text-2);
-  line-height: 1.6;
-}
-.landing-steps {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 18px;
-}
-.landing-steps h2,
-.landing-final-cta h2 {
-  margin: 0;
-  font-size: 21px;
-  letter-spacing: -0.02em;
-}
-.landing-steps ol {
-  margin: 14px 0 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.landing-steps li {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  color: var(--text-2);
-  line-height: 1.5;
-}
-.landing-steps li svg {
-  color: var(--accent);
-  margin-top: 2px;
-  flex-shrink: 0;
-}
-.landing-final-cta {
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--select) 30%, var(--border));
-  background:
-    linear-gradient(
-      120deg,
-      color-mix(in srgb, var(--select) 20%, transparent),
-      color-mix(in srgb, var(--accent) 13%, transparent)
-    ),
-    var(--surface);
-  padding: 24px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-}
-.landing-final-cta .btn.primary svg {
-  transition: translate 0.2s ease;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .landing-page::before {
-    animation: landing-drift 18s ease-in-out infinite alternate, landing-hue 40s linear infinite;
-  }
-  .landing-hero > * {
-    animation: landing-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  }
-  .landing-hero > :nth-child(2) {
-    animation-delay: 0.08s;
-  }
-  .landing-hero > :nth-child(3) {
-    animation-delay: 0.16s;
-  }
-  .landing-hero > :nth-child(4) {
-    animation-delay: 0.22s;
-  }
-  .landing-hero > :nth-child(5) {
-    animation-delay: 0.28s;
-  }
-  /* Sections fade up as they scroll into view; browsers without scroll timelines just show them. */
-  @supports (animation-timeline: view()) {
-    .landing-card,
-    .landing-steps,
-    .landing-final-cta {
-      animation: landing-rise linear both;
-      animation-timeline: view();
-      animation-range: entry 0% entry 70%;
-    }
-  }
-}
+/* Landing styles live in landing.css. */
 @keyframes landing-rise {
   from {
     opacity: 0;
     transform: translateY(18px);
-  }
-}
-@keyframes landing-drift {
-  0% {
-    transform: translate(0, 0) scale(1);
-    background-position: 0% 0%;
-  }
-  50% {
-    transform: translate(4%, -3%) scale(1.08);
-    background-position: 100% 40%;
-  }
-  100% {
-    transform: translate(-3%, 4%) scale(1.04);
-    background-position: 30% 100%;
-  }
-}
-@keyframes landing-hue {
-  to {
-    filter: blur(30px) hue-rotate(40deg);
   }
 }
 
@@ -778,17 +522,15 @@ select.input {
   align-items: center;
   justify-content: space-between;
   padding: 14px clamp(16px, 4vw, 48px);
-  background: color-mix(in srgb, var(--bg) 85%, transparent);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--border);
+  background: var(--bg);
 }
 .dash-main {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 32px clamp(16px, 4vw, 48px) 64px;
+  padding: 40px clamp(16px, 4vw, 48px) 72px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 24px;
 }
 .dash-hero {
   display: flex;
@@ -799,8 +541,11 @@ select.input {
 }
 .dash-hero h1 {
   margin: 0;
-  font-size: 30px;
-  letter-spacing: -0.03em;
+  font-family: "Big Shoulders", Manrope, Impact, sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: clamp(48px, 7vw, 96px);
+  line-height: 0.9;
 }
 .dash-hero p {
   margin: 4px 0 0;
@@ -860,18 +605,16 @@ select.input {
   flex-direction: column;
   border-radius: var(--radius-lg);
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   overflow: hidden;
   min-height: 240px;
   transition:
-    border-color 0.2s,
-    translate 0.25s var(--ease),
-    box-shadow 0.25s var(--ease);
+    background 0.2s,
+    translate 0.35s var(--ease);
 }
 .project-card:hover {
-  border-color: var(--border-strong);
-  translate: 0 -3px;
-  box-shadow: var(--shadow-md);
+  background: var(--surface-2);
+  translate: 0 -4px;
 }
 .project-card.skeleton {
   background: linear-gradient(
@@ -892,13 +635,14 @@ select.input {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border-style: dashed;
+  border: 2px dashed var(--border-strong);
   background: transparent;
   color: var(--text-2);
   font-weight: 700;
 }
 .project-card.new:hover:not(:disabled) {
-  color: var(--accent);
+  color: var(--accent-ink);
+  background: var(--accent);
   border-color: var(--accent);
 }
 .project-thumb {
@@ -1096,8 +840,12 @@ select.input {
   background: transparent;
   color: var(--text-2);
   transition:
-    background 0.12s,
-    color 0.12s;
+    background 0.15s,
+    color 0.15s,
+    transform 0.2s var(--ease);
+}
+.rail-btn:active:not(:disabled) {
+  transform: scale(0.92);
 }
 .rail-btn:hover:not(:disabled) {
   background: var(--surface-2);
@@ -2368,16 +2116,6 @@ button.layer-toggle:hover {
   .crumb-sep {
     display: none;
   }
-  .landing-grid {
-    grid-template-columns: 1fr;
-  }
-  .landing-steps ol {
-    grid-template-columns: 1fr;
-  }
-  .landing-final-cta {
-    flex-direction: column;
-    align-items: flex-start;
-  }
 }
 @media (max-width: 640px) {
   .workspace {
@@ -2399,16 +2137,6 @@ button.layer-toggle:hover {
   }
   .dash-hero .usage {
     display: none;
-  }
-  .landing-header {
-    flex-wrap: wrap;
-  }
-  .landing-header .row {
-    width: 100%;
-    justify-content: flex-end;
-  }
-  .landing-hero h1 {
-    max-width: none;
   }
 }
 

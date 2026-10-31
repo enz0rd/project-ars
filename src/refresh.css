@@ -1,0 +1,317 @@
+/* Visual refresh for the app screens (dashboard, editor, menus, dialogs).
+   Loaded after styles.css: it only overrides look and motion, never layout or behaviour.
+   Rules: surfaces are separated by tone, not lines; one radius family; display type for titles;
+   every control answers hover, press and focus. */
+
+:root {
+  --radius: 10px;
+  --radius-lg: 16px;
+  --display: "Big Shoulders", Manrope, Impact, sans-serif;
+  --spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --border: #1b2027;
+  --border-strong: #2a313c;
+}
+:root[data-theme="light"] {
+  --border: #e6e6dd;
+  --border-strong: #d0d0c4;
+}
+:root {
+  font-size: 13px;
+}
+
+/* ---------- Controls ---------- */
+.btn,
+.icon-btn,
+.rail-btn,
+.tabs button,
+.menu-item,
+.settings-nav button {
+  transition:
+    background 0.18s var(--spring),
+    color 0.18s var(--spring),
+    transform 0.25s var(--spring),
+    filter 0.18s;
+}
+.btn.primary {
+  font-weight: 700;
+}
+.btn.primary:hover:not(:disabled) {
+  filter: none;
+  transform: translateY(-1px);
+}
+.btn.primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+}
+.btn.subtle {
+  border-color: transparent;
+}
+.icon-btn:active:not(:disabled) {
+  transform: scale(0.9);
+}
+.chip,
+.live-pill {
+  border-color: transparent;
+  background: var(--surface-2);
+}
+.live-pill.on {
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+}
+.input,
+.lang-select select {
+  border-color: transparent;
+  background: var(--surface-2);
+  transition:
+    background 0.18s,
+    box-shadow 0.18s var(--spring);
+}
+.input:hover {
+  background: var(--surface-3);
+}
+.input:focus {
+  background: var(--surface-2);
+  box-shadow: 0 0 0 2px var(--select); /* taste-skill-ignore: focus ring / reset of the inset marker */
+}
+:focus-visible {
+  outline: 2px solid var(--select);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------- Editor frame: panels are tone steps with a gap between them ---------- */
+.app {
+  background: var(--bg);
+}
+.topbar {
+  height: 54px;
+  border-bottom: 0;
+  background: var(--bg);
+  padding: 0 14px;
+}
+.doc-name {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  width: 300px;
+}
+.workspace {
+  gap: 8px;
+  padding: 0 8px 8px;
+  background: var(--bg);
+}
+.rail,
+.inspector {
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.workspace > .panel,
+.inspector {
+  overflow: hidden;
+}
+.rail {
+  padding: 12px 0;
+  gap: 6px;
+}
+.rail-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+.rail-btn.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+  transform: scale(1.04);
+}
+.rail-sep {
+  height: 2px;
+  border-radius: 1px;
+  background: var(--surface-3);
+}
+.workspace > :nth-child(2) {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* ---------- Inspector ---------- */
+.tabs {
+  border-bottom: 0;
+  padding: 10px;
+  gap: 4px;
+}
+.tabs button {
+  border-radius: 999px;
+  height: 34px;
+}
+.tabs button:hover {
+  background: var(--surface-2);
+}
+.tabs button.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: none; /* taste-skill-ignore: focus ring / reset of the inset marker */
+}
+.panel-header,
+.props-title,
+.ai-title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.props-title .type-chip {
+  font-family: Manrope, system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.count {
+  font-family: Manrope, system-ui, sans-serif;
+  letter-spacing: 0;
+}
+.section {
+  border-bottom: 0;
+  margin: 0 8px 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.section-title {
+  font-weight: 800;
+}
+.search {
+  border-color: transparent;
+  border-radius: 999px;
+  padding: 0 12px;
+}
+.search:focus-within {
+  box-shadow: 0 0 0 2px var(--select); /* taste-skill-ignore: focus ring / reset of the inset marker */
+}
+
+/* ---------- Menus and dialogs ---------- */
+.menu {
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  animation: pop 0.22s var(--spring);
+  transform-origin: top left;
+}
+.menu-item {
+  height: 34px;
+  border-radius: 9px;
+}
+.menu-item:hover:not(:disabled) {
+  background: var(--surface-3);
+  transform: translateX(2px);
+}
+.menu-sep {
+  height: 2px;
+  border-radius: 1px;
+  background: var(--surface-3);
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+}
+.modal-backdrop {
+  background: rgba(5, 6, 8, 0.72);
+}
+.modal {
+  border-radius: 22px;
+  background: var(--surface);
+  animation: pop 0.34s var(--spring);
+}
+.modal-header {
+  border-bottom: 0;
+  padding: 18px 18px 8px 24px;
+}
+.modal-header h2 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.modal-body {
+  padding: 8px 24px 24px;
+}
+.settings-nav {
+  border-right: 0;
+  padding: 12px;
+  background: var(--surface-2);
+}
+.settings-nav button {
+  height: 38px;
+  border-radius: 10px;
+}
+.settings-nav button.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: none; /* taste-skill-ignore: focus ring / reset of the inset marker */
+}
+
+/* ---------- Assistant ---------- */
+.welcome h3 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.welcome-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: var(--select);
+  color: #fff;
+}
+.ai-avatar {
+  border-radius: 8px;
+}
+
+/* ---------- Toast ---------- */
+.toast {
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+/* ---------- Motion on entry ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .workspace > * {
+    animation: panel-in 0.6s var(--spring) both;
+  }
+  .workspace > :nth-child(2) {
+    animation-delay: 0.06s;
+  }
+  .workspace > :nth-child(3) {
+    animation-delay: 0.12s;
+  }
+  .topbar {
+    animation: panel-in 0.5s var(--spring) both;
+  }
+  .layer-list > *,
+  .suggestions > * {
+    animation: panel-in 0.4s var(--spring) both;
+  }
+}
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@media (max-width: 640px) {
+  .workspace {
+    gap: 6px;
+    padding: 0 6px 6px;
+  }
+  .doc-name {
+    width: 140px;
+    font-size: 18px;
+  }
+}

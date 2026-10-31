@@ -378,4 +378,13 @@ export const ptBR: Messages = {
   "landing.finalCta": "Criar conta grátis",
   "landing.signIn": "Entrar",
   "landing.signUp": "Criar conta",
+  "landing.demo.label": "Experimente: escolha uma forma, depois uma cor",
+  "landing.demo.agent": "Peça ao agente para organizar",
+  "landing.demo.scramble": "Bagunçar",
+  "landing.demo.layers": "Camadas",
+  "landing.demo.fill": "Preenchimento",
+  "landing.demo.prompt": "Alinhe as três formas em uma grade",
+  "landing.demo.done": "Pronto. Alinhado e com espaçamento uniforme.",
+  "landing.marquee": "Editor vetorial · Assistente de IA · MCP · Colaboração ao vivo · Código aberto",
+  "landing.footerNote": "Código aberto. Feito para ser clonado.",
 };

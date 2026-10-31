@@ -378,4 +378,13 @@ export const es: Messages = {
   "landing.finalCta": "Crear cuenta gratis",
   "landing.signIn": "Entrar",
   "landing.signUp": "Crear cuenta",
+  "landing.demo.label": "Pruébalo: elige una forma y luego un color",
+  "landing.demo.agent": "Pide al agente que ordene",
+  "landing.demo.scramble": "Desordenar",
+  "landing.demo.layers": "Capas",
+  "landing.demo.fill": "Relleno",
+  "landing.demo.prompt": "Alinea las tres formas en una cuadrícula",
+  "landing.demo.done": "Listo. Alineado y con espaciado uniforme.",
+  "landing.marquee": "Editor vectorial · Asistente de IA · MCP · Colaboración en vivo · Código abierto",
+  "landing.footerNote": "Código abierto. Hecho para ser bifurcado.",
 };

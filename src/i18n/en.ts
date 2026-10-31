@@ -377,4 +377,13 @@ export const en = {
   "landing.finalCta": "Create free account",
   "landing.signIn": "Sign in",
   "landing.signUp": "Create account",
+  "landing.demo.label": "Try it: pick a shape, then a colour",
+  "landing.demo.agent": "Ask the agent to tidy up",
+  "landing.demo.scramble": "Scramble",
+  "landing.demo.layers": "Layers",
+  "landing.demo.fill": "Fill",
+  "landing.demo.prompt": "Line the three shapes up on a grid",
+  "landing.demo.done": "Done. Aligned and evenly spaced.",
+  "landing.marquee": "Vector editor · AI assistant · MCP · Live collaboration · Open source",
+  "landing.footerNote": "Open source. Made to be forked.",
 } as const;
